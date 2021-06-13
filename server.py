@@ -95,6 +95,7 @@ def on_disconnect():
     print("\nusers: ", _users_in_room, "\n")
 
 
+# handling most rtcpeerconnection steps including offer / answer 
 @socketio.on("data")
 def on_data(data):
     sender_sid = data['sender_id']

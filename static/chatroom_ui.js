@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", (event)=>{
         window.location.replace("/");
     });
 
-    document.getElementById("room_link").innerHTML=`or the link: <span class="heading-mark">${window.location.href}</span>`;
+    // document.getElementById("room_link").innerHTML=`or the link: <span class="heading-mark">${window.location.href}</span>`;
 
 });
 
@@ -33,12 +33,15 @@ function makeVideoElement(element_id, display_name)
 
     wrapper_div.id = "div_"+element_id;
     vid.id = "vid_"+element_id;
+    vid.setAttribute("width","320"); 
+    vid.setAttribute("height","240");
 
-    wrapper_div.className = "shadow video-item";
+    wrapper_div.className = "video-item";
     vid_wrapper.className = "vid-wrapper";
     name_text.className = "display-name";
     
     vid.autoplay = true;        
+    name_text.setAttribute("name", display_name);
     name_text.innerText = display_name;
 
     vid_wrapper.appendChild(vid);
