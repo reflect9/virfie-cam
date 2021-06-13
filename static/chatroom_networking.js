@@ -1,46 +1,57 @@
 var myID;
 var _peer_list = {};
 var local_canvas_list = {};  // containing canvases for videos (without bg) from peers
+var local_canvas_list_flipped = {};  
 var remove_bg_interval, composition_interval;
 let bodyPixInstance;
+let current_bg, current_bg_name;
 
 // socketio 
 var protocol = window.location.protocol;
 var socket = io(protocol + '//' + document.domain + ':' + location.port, {autoConnect: false});
 
 var default_composition_setting = {
-    "1": {
-        "z-index":100,
-        "x":"0%", 
-        "y":"0%",
-        "scale":"50%"
+    "players": {
+        "1": {
+            "z-index":100,
+            "x":"0%", 
+            "y":"0%",
+            "scale":"50%"
+        },
+        "2": {
+            "z-index":90,
+            "x":"50%", 
+            "y":"0%",
+            "scale":"50%"
+        }
     },
-    "2": {
-        "z-index":90,
-        "x":"50%", 
-        "y":"0%",
-        "scale":"50%"
-    }
+    "background": "mcdonalds-french-fries-on-tray.jpeg"
 };
 
-document.addEventListener("DOMContentLoaded", async (event)=>{
-    console.log("Start loading bodypix");
-    document.getElementById("composition_setting").value = JSON.stringify(default_composition_setting, null, 4);
-    bodyPix.load({ // BodyPix (https://github.com/tensorflow/tfjs-models/tree/master/body-pix)
-        architecture: 'MobileNetV1',
-        multiplier: 0.75,
-        stride: 16,
-        quantBytes: 2,
-        estimate:"partmap"
-    }).then(net=>{
-        bodyPixInstance = net;
+function showAvailableWebcams(){
+    navigator.mediaDevices.enumerateDevices()
+    .then(devices=>{
+        let selector = document.getElementById("select_webcam");
+        let videoDevices = devices.filter(d=>{return d.kind=="videoinput";});
+        let options_html = videoDevices.map(d=>{
+            return `<option value=${d.deviceId}>${d.label}</option>`;
+        });
+        selector.innerHTML = selector.innerHTML + options_html;
+        selector.addEventListener("change",(event)=>{
+            console.log(event.target.value + " is selected as your webcam.");
+            document.querySelector(".vid-wrapper .overlay_message").classList.add("hidden");
+            startCamera(event.target.value);
+        });
     });
+}
+function startCamera(deviceId) {
     console.log("Start camera");
     navigator.mediaDevices.getUserMedia({
         audio:true,
         video:{
             width:{ min:320, max:320, ideal:320 },
-            height:{ min:240, max:240, ideal:240 }
+            height:{ min:240, max:240, ideal:240 },
+            deviceId: { exact: deviceId }
         }
     })
     .then((stream)=>{
@@ -57,6 +68,22 @@ document.addEventListener("DOMContentLoaded", async (event)=>{
         console.log("getUserMedia Error! ", e);
         alert("Error! Unable to access camera or mic! ");
     });
+}
+
+document.addEventListener("DOMContentLoaded", async (event)=>{
+    console.log("Start loading bodypix");
+    document.getElementById("composition_setting").value = JSON.stringify(default_composition_setting, null, 4);
+    bodyPix.load({ // BodyPix (https://github.com/tensorflow/tfjs-models/tree/master/body-pix)
+        architecture: 'MobileNetV1',
+        multiplier: 0.75,
+        stride: 16,
+        quantBytes: 2,
+        estimate:"partmap"
+    }).then(net=>{
+        bodyPixInstance = net;
+    });
+    showAvailableWebcams();
+
 });
 
 //////////////////////////////////////////////////////////////////////
@@ -310,8 +337,22 @@ function start_video_composition(){
         ctx.globalCompositeOperation = "source-over";
         ctx.clearRect(0, 0, target_canvas.width, target_canvas.height);
         let cs_obj = JSON.parse(document.getElementById("composition_setting").value);
-        let display_names_sorted_by_z_index = Object.keys(cs_obj).sort((s1,s2)=>{
-            return cs_obj[s2]["z-index"] - cs_obj[s1]["z-index"];
+        // Load background image if the image file has not loaded (or changed)
+        if (cs_obj["background"]) {
+            if (typeof current_bg_name == "undefined" || cs_obj["background"]!=current_bg_name) {
+                console.log("loading "+ cs_obj["background"]);
+                let bg_img = new Image();
+                bg_img.src = "/static/"+cs_obj["background"];
+                bg_img.onload = ()=>{ 
+                    current_bg = bg_img;
+                    current_bg_name = cs_obj["background"];
+                };
+            }
+        }
+        if(current_bg) ctx.drawImage(current_bg,0,0,target_canvas.width, target_canvas.height);
+        // Displaying webcam streams
+        let display_names_sorted_by_z_index = Object.keys(cs_obj.players).sort((s1,s2)=>{
+            return cs_obj.players[s2]["z-index"] - cs_obj.players[s1]["z-index"];
         }).reverse();
         display_names_sorted_by_z_index.forEach((display_name)=>{
             let video_element_id;
@@ -322,16 +363,16 @@ function start_video_composition(){
                 video_element_id = document.querySelector("div.display-name[name='"+display_name+"']").closest("div.video-item").id.replace("div_","");
                 // peer_id = video_element_id.replace("vid_","");
             }
-            let local_canvas = local_canvas_list[video_element_id];
-            if (typeof local_canvas == "undefined") return;
+            let local_canvas_flipped = local_canvas_list_flipped[video_element_id];
+            if (typeof local_canvas_flipped == "undefined") return;
             else {
                 // Use composition_setting here
-                let cs = cs_obj[display_name];  // cs means composition setting for the video
+                let cs = cs_obj.players[display_name];  // cs means composition setting for the video
                 let x = target_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
                 let y = target_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
                 let width = target_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
                 let height = target_canvas.height * (parseFloat(cs.scale.replace("%",""))/100);
-                ctx.drawImage(local_canvas, x, y, width, height);
+                ctx.drawImage(local_canvas_flipped, x, y, width, height);
             }
         });
     },200);
@@ -369,9 +410,17 @@ async function perform(net, originalVideoElement, targetCanvasElement) {
         local_canvas_list[originalVideoID] = document.createElement("canvas");
         local_canvas_list[originalVideoID].width = 320; 
         local_canvas_list[originalVideoID].height= 240;
+        local_canvas_list_flipped[originalVideoID] = document.createElement("canvas");
+        local_canvas_list_flipped[originalVideoID].width = 320; 
+        local_canvas_list_flipped[originalVideoID].height= 240;
     }
     let temp_canvas = local_canvas_list[originalVideoID];
     temp_canvas.getContext('2d').putImageData(mask,0,0);
     temp_canvas.getContext('2d').globalCompositeOperation = "source-in";
     temp_canvas.getContext('2d').drawImage(originalVideoElement, 0, 0);
+    let ctx_flipped = local_canvas_list_flipped[originalVideoID].getContext("2d");
+    ctx_flipped.clearRect(0,0,320,240);
+    ctx_flipped.translate(320, 0);
+    ctx_flipped.scale(-1, 1);
+    ctx_flipped.drawImage(temp_canvas, 0, 0);
 }

@@ -69,10 +69,16 @@
 
 
     </div>
-        
+    <div class="div_webcam_selector">
+        <label for="webcam">Choose Your webcam: </label>
+        <select name="webcam" id="select_webcam">
+            <option value="" disabled selected>Select webcam to use</option>
+        </select>
+    </div>    
     <div class="container-fluid px-0 mx-0">
         <div id="div_local_vid">
             <div class="vid-wrapper">
+                <label class="overlay_message">Choose camera first</label>
                 <video id="local_vid" width="320" height="240" autoplay muted></video>
                 <canvas id="local_vid_canvas" width="320" height="240" ></canvas>
             </div>

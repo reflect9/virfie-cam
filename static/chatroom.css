@@ -1,9 +1,18 @@
+.hidden {
+    display:none;
+}
 .room-info {
     float:left;
     margin-right:32px;
 }
 
-
+.div_webcam_selector {
+    margin:20px 0 0 20px;
+    font-size:13px;
+}
+.div_webcam_selector select {
+    width:150px;
+}
 .video-grid
 {  
     /* display: grid;
@@ -24,6 +33,7 @@
 }
 .vid-wrapper
 {
+    position:relative;
     display:inline-block;
     background-color: white;
     padding: 0;
@@ -31,6 +41,12 @@
     margin:20px;
     /* -webkit-transform: scaleX(-1);
     transform: scaleX(-1); */
+}
+.vid-wrapper .overlay_message {
+    position:absolute;
+    top:40%; left:12px;
+    color:black;
+    font-size:14px; font-weight:500;
 }
 .vid-wrapper video{
     width:160px; height:120px;
