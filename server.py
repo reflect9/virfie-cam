@@ -37,11 +37,11 @@ def entry_checkpoint(room_id):
         display_name = request.form['display_name']
         mute_audio = request.form['mute_audio']
         mute_video = request.form['mute_video']
-        print("SESSION AT CHECKPOINT1: " + json.dumps(session[room_id]))
+        # print("SESSION AT CHECKPOINT1: " + json.dumps(session[room_id]))
         session[room_id] = {"name": display_name, "mute_audio":mute_audio, "mute_video":mute_video}
-        print("SESSION AT CHECKPOINT2: " + json.dumps(session[room_id]))
+        # print("SESSION AT CHECKPOINT2: " + json.dumps(session[room_id]))
         return redirect(url_for("enter_room", room_id=room_id))
-    print("SESSION AT CHECKPOINT: " + json.dumps(session[room_id]))
+    # print("SESSION AT CHECKPOINT: " + json.dumps(session[room_id]))
     return render_template("chatroom_checkpoint.html", room_id=room_id)
     
 
