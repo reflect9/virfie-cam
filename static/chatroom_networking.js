@@ -13,16 +13,16 @@ var socket = io(protocol + '//' + document.domain + ':' + location.port, {autoCo
 var default_composition_setting = {
     "players": {
         "1": {
-            "z-index":100,
-            "x":"0%", 
-            "y":"0%",
-            "scale":"50%"
+            "z-index": 100,
+            "x": "-10%",
+            "y": "40%",
+            "scale": "60%"
         },
         "2": {
-            "z-index":90,
-            "x":"50%", 
-            "y":"0%",
-            "scale":"50%"
+            "z-index": 101,
+            "x": "30%",
+            "y": "20%",
+            "scale": "85%"
         }
     },
     "background": "mcdonalds-french-fries-on-tray.jpeg"
@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", async (event)=>{
 
 socket.on("connect", ()=>{
     console.log("socket connected....");
-    socket.emit("join-room", {"room_id": myRoomID});
+    socket.emit("join-room", {"room_id": myRoomID, "nickname":myName});
 });
 socket.on("user-connect", (data)=>{
     console.log("user-connect ", data);
@@ -130,7 +130,7 @@ function closeConnection(peer_id)
         _peer_list[peer_id].ontrack = null;
         _peer_list[peer_id].onnegotiationneeded = null;
 
-        document.getElementById("div_"+peer_id).remove();
+        // document.getElementById("div_"+peer_id).remove();
         delete _peer_list[peer_id]; // remove user from user list
     }
 }

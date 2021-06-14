@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_socketio import SocketIO, emit, join_room, leave_room
+import json 
 
 # Next two lines are for the issue: https://github.com/miguelgrinberg/python-engineio/issues/142
 from engineio.payload import Payload
@@ -36,9 +37,11 @@ def entry_checkpoint(room_id):
         display_name = request.form['display_name']
         mute_audio = request.form['mute_audio']
         mute_video = request.form['mute_video']
+        print("SESSION AT CHECKPOINT1: " + json.dumps(session[room_id]))
         session[room_id] = {"name": display_name, "mute_audio":mute_audio, "mute_video":mute_video}
+        print("SESSION AT CHECKPOINT2: " + json.dumps(session[room_id]))
         return redirect(url_for("enter_room", room_id=room_id))
-
+    print("SESSION AT CHECKPOINT: " + json.dumps(session[room_id]))
     return render_template("chatroom_checkpoint.html", room_id=room_id)
     
 
@@ -53,8 +56,12 @@ def on_connect():
 def on_join_room(data):
     sid = request.sid
     room_id = data["room_id"]
-    display_name = session[room_id]["name"]
-    
+    # display_name = session[room_id]["name"]
+    display_name = data["nickname"]
+    print("SESSION AT JOIN-ROOM: " + json.dumps(session[room_id]))
+    # print("_NAME_OF_SID AT JOIN-ROOM: " + json.dumps(_name_of_sid[sid]))
+    # print("_room_of_sid AT JOIN-ROOM: " + json.dumps(_room_of_sid[sid]))
+
     # register sid to the room
     join_room(room_id)
     _room_of_sid[sid] = room_id

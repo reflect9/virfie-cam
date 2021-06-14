@@ -58,7 +58,7 @@ function addVideoElement(element_id, display_name)
 function removeVideoElement(element_id)
 {    
     let v = getVideoObj(element_id);
-    if(v.srcObject){
+    if(v && v.srcObject){
         v.srcObject.getTracks().forEach(track => track.stop());
     }
     v.removeAttribute("srcObject");
