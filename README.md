@@ -51,6 +51,8 @@ Then you must be able to see the information like below
 ```
 Now you have a local server listening to port 5000. Open a Chrome browser (use Chrome only for now), and access `127.0.0.1:5000`
 
+Follow the instruction video below. If you don't follow the order strictly, it may not work properly!  
+
 [Usage Instruction](https://youtu.be/rUvXf7N8R2Y)
 
 
