@@ -11,9 +11,9 @@ Installation
 -------------
 To run this on your machine, install the following:
 #### Requirements:
-* python 3.x
-* Flask
-* Flask-SocketIO
+* python 3.x (I use 3.9, but 3.7 or 3.8 will work as well)
+* Flask 1.x
+* Flask-SocketIO 4.x.x
 * eventlet (for websocket support while using SocketIO)
 Make sure you have pip installed on your [OSX](https://www.geeksforgeeks.org/how-to-install-pip-in-macos/#:~:text=pip%20can%20be%20downloaded%20and,directory%20as%20python%20is%20installed.&text=and%20wait%20through%20the%20installation,now%20installed%20on%20your%20system) or [Windows](https://phoenixnap.com/kb/install-pip-windows)
 
@@ -51,5 +51,6 @@ Then you must be able to see the information like below
 ```
 Now you have a local server listening to port 5000. Open a Chrome browser (use Chrome only for now), and access `127.0.0.1:5000`
 
+[![Usage Instruction](https://youtu.be/rUvXf7N8R2Y)]
 
 
