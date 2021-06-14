@@ -35,9 +35,13 @@ python server.py
 ```
 or you can run it on flask server with development mode
 ```
-(If you are using OSX) EXPORT FLASK_APP=server.py
-(If you are using Windows) SET FLASK_APP=server.py
-(Then run) flask run
+(If you are using OSX) 
+export FLASK_APP=server.py
+export FLASK_ENV=development
+(If you are using Windows) 
+set FLASK_APP=server.py
+set FLASK_ENV=development
+(Then for both cases) flask run
 ```
 Then you must be able to see the information like below
 ```
