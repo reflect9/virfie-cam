@@ -60,3 +60,19 @@ Follow the instruction video below. If you don't follow the order strictly, it m
 [Usage Instruction](https://youtu.be/rUvXf7N8R2Y)
 
 
+Technology
+-------------------
+This section describes libraries and APIs that the prototype is implemented with.
+### Capturing Video Stream
+
+To capture user's video stream, the prototype uses [WebRTC](https://en.wikipedia.org/wiki/WebRTC), which is supported by most conventional web browsers and operative systems. 
+  
+### Detecting human body
+  To separate people from video streams the prototype uses Google's TensorflowJS library, more specifically the [BodyPix module](https://github.com/tensorflow/tfjs-models/tree/master/body-pix). The BodyPix module can segment an image into pixels that are and are not part of a person, and into pixels that belong to each of twenty-four body parts. It works for multiple people in an input image or video as well. 
+  
+### Peer-to-peer communication
+  While WebRTC supports basic peer-to-peer video streaming, video chatrooms require a server for managing multiple connections. For that purpose, the prototype uses [SocketIO](https://socket.io/) on the server-side. 
+  
+### Video Composition
+  When a peer has joined a room, his/her video stream is shared with other peers, and video streams from others will flow into his/her device. Streams from other peers are individually processed to remove their background using the [BodyPix](https://github.com/tensorflow/tfjs-models/tree/master/body-pix) module. Video streams without background are placed onto an empty canvas object. Users can specify placements (x and y coordinates each stream), scale (width and height of each stream in ratio to the source video), and z-index (which one of overlapping streams should be shown). In addition, users can set an image file as the composed video's background. All these options are specified in JSON, which is easy for developers but might be difficult for ordinary users. Nevertheless, we beileve it would be straightforward to replace the JSON editor with a GUI panel. 
+
