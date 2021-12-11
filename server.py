@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import json 
+import ssl
+import argparse
 
 # Next two lines are for the issue: https://github.com/miguelgrinberg/python-engineio/issues/142
 from engineio.payload import Payload
@@ -115,4 +117,14 @@ def on_data(data):
     socketio.emit('data', data, room=target_sid)
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--env', required=False, default='development')
+    args = parser.parse_args()
+
+    if (args.env == 'production'):
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        ssl_context.load_cert_chain(certfile="./fullchain.pem", keyfile="./privkey.pem", password="hi")
+        app.run(host="0.0.0.0", port=443, ssl_context=ssl_context)
+        socketio.run(app, host="0.0.0.0", port=443, ssl_context=ssl_context, debug=True)
+
+    socketio.run(app, host="0.0.0.0", debug=True)
