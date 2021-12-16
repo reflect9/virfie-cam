@@ -5,6 +5,8 @@ var local_canvas_list_flipped = {};
 var remove_bg_interval, composition_interval;
 let bodyPixInstance;
 let current_bg, current_bg_name;
+let current_overlay, current_overlay_info;
+let current_segmentation = {};
 
 // socketio 
 var protocol = window.location.protocol;
@@ -25,7 +27,24 @@ var default_composition_setting = {
             "scale": "85%"
         }
     },
-    "background": "mcdonalds-french-fries-on-tray.jpeg"
+    "background": "mcdonalds-french-fries-on-tray.jpeg",
+    "overlay": {
+        "filename":"cat.png",
+        // "position": {
+        //     "type": "coordinate",
+        //     "x":50,
+        //     "y":100
+        // }
+        "position":{
+            "type": "tracking",
+            "player":"1",
+            "body_part": "head",
+            "offset":{
+                "x":0,
+                "y":-10
+            }
+        }
+    }
 };
 
 function showAvailableWebcams(){
@@ -322,71 +341,146 @@ function toggle_video_composition(){
 }
 
 function start_video_composition(){
-    let target_canvas = document.querySelector("#composite_vid");
+    let composite_canvas = document.querySelector("#composite_vid");
     // Create an interval that regularly processes videos
-    remove_bg_interval = setInterval(()=>{
-        let local_videos = document.querySelectorAll("#div_local_vid video");
-        local_videos.forEach(lv=>{
-            perform(bodyPixInstance, lv, target_canvas);
-        });
-    },100);
+    // remove_bg_interval = setInterval(()=>{
+    //     let local_videos = document.querySelectorAll("#div_local_vid video");
+    //     local_videos.forEach(lv=>{
+    //         perform(bodyPixInstance, lv, composite_canvas);
+    //     });
+    // },100);
 
     // Drawing onto the targetCanvas
     composition_interval = setInterval(()=>{
-        let ctx = target_canvas.getContext("2d");
-        ctx.globalCompositeOperation = "source-over";
-        ctx.clearRect(0, 0, target_canvas.width, target_canvas.height);
-        let cs_obj = JSON.parse(document.getElementById("composition_setting").value);
+        let comp_ctx = composite_canvas.getContext("2d");
+        comp_ctx.globalCompositeOperation = "source-over";
+        
+        // Perform > Removing backgrounds of all local videos and flip horizontally
+        let local_videos = document.querySelectorAll("#div_local_vid video");
+        local_videos.forEach(lv=>{
+            if (lv.readyState == 4) {
+                perform(bodyPixInstance, lv, composite_canvas);
+            }
+        });
+        
+        // Start video composition
+        let comp_setting = JSON.parse(document.getElementById("composition_setting").value);
+        
         // Load background image if the image file has not loaded (or changed)
-        if (cs_obj["background"]) {
-            if (typeof current_bg_name == "undefined" || cs_obj["background"]!=current_bg_name) {
-                console.log("loading "+ cs_obj["background"]);
+        if (comp_setting["background"]) {
+            if (typeof current_bg_name == "undefined" || comp_setting["background"]!=current_bg_name) {
+                console.log("loading "+ comp_setting["background"]);
                 let bg_img = new Image();
-                bg_img.src = "/static/"+cs_obj["background"];
+                bg_img.src = "/static/"+comp_setting["background"];
                 bg_img.onload = ()=>{ 
                     current_bg = bg_img;
-                    current_bg_name = cs_obj["background"];
+                    current_bg_name = comp_setting["background"];
                 };
             }
         }
-        if(current_bg) ctx.drawImage(current_bg,0,0,target_canvas.width, target_canvas.height);
-        // Displaying webcam streams
-        let display_names_sorted_by_z_index = Object.keys(cs_obj.players).sort((s1,s2)=>{
-            return cs_obj.players[s2]["z-index"] - cs_obj.players[s1]["z-index"];
+        if(current_bg) comp_ctx.drawImage(current_bg,0,0,composite_canvas.width, composite_canvas.height);
+        else comp_ctx.clearRect(0, 0, composite_canvas.width, composite_canvas.height);
+        
+        // Displaying webcam streams in the order of z-index
+        let display_names_sorted_by_z_index = Object.keys(comp_setting.players).sort((s1,s2)=>{
+            return comp_setting.players[s2]["z-index"] - comp_setting.players[s1]["z-index"];
         }).reverse();
         display_names_sorted_by_z_index.forEach((display_name)=>{
-            let video_element_id;
-            if(display_name==myName) {
-                video_element_id = "local_vid";
-                // peer_id = myID;
-            } else {
-                video_element_id = document.querySelector("div.display-name[name='"+display_name+"']").closest("div.video-item").id.replace("div_","");
-                // peer_id = video_element_id.replace("vid_","");
-            }
-            let local_canvas_flipped = local_canvas_list_flipped[video_element_id];
-            if (typeof local_canvas_flipped == "undefined") return;
-            else {
-                // Use composition_setting here
-                let cs = cs_obj.players[display_name];  // cs means composition setting for the video
-                let x = target_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
-                let y = target_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
-                let width = target_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
-                let height = target_canvas.height * (parseFloat(cs.scale.replace("%",""))/100);
-                ctx.drawImage(local_canvas_flipped, x, y, width, height);
+            try{
+                let video_element_id;
+                if(display_name==myName) {
+                    video_element_id = "local_vid";
+                } else {
+                    let video_element = document.querySelector("div.display-name[name='"+display_name+"']");
+                    if (video_element == null) return; // the player has not joined yet
+                    else {
+                        video_element_id = document.querySelector("div.display-name[name='"+display_name+"']")
+                        .closest("div.video-item").id.replace("div_","");
+                    }
+                }
+                let local_canvas_flipped = local_canvas_list_flipped[video_element_id];
+                if (typeof local_canvas_flipped == "undefined") return;
+                else {
+                    // Use composition_setting here
+                    let cs = comp_setting.players[display_name];  // cs means composition setting for the video
+                    let x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
+                    let y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
+                    let width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
+                    let height = composite_canvas.height * (parseFloat(cs.scale.replace("%",""))/100);
+                    comp_ctx.drawImage(local_canvas_flipped, x, y, width, height);
+                }
+            } catch(e) {
+                console.log(e);
+                return;
             }
         });
-    },200);
-    
+        // Load overlay image if the image file has not loaded (or changed)
+        if (comp_setting["overlay"]) {
+            if (typeof current_overlay_info == "undefined" || comp_setting["overlay"]["filename"]!=current_overlay_info["filename"]) {
+                // console.log("loading "+ comp_setting["overlay"]);
+                let overlay_img = new Image();
+                overlay_img.src = "/static/"+comp_setting["overlay"]["filename"];
+                overlay_img.onload = ()=>{ 
+                    current_overlay = overlay_img;
+                    current_overlay_info = comp_setting["overlay"];
+                };
+            }
+        }
+        if(current_overlay) {
+            let x, y;
+            let overlay_setting = comp_setting["overlay"];
+            if (overlay_setting["position"]["type"] == "coordinate") {
+                x = overlay_setting["position"]["x"];
+                y = overlay_setting["position"]["y"];
+            } else if(overlay_setting["position"]["type"] == "tracking") {
+                let player_id; ;
+                if(overlay_setting["position"]["player"]==myName) { player_id = "local_vid"; }
+                else {
+                    player_id = "div_" + overlay_setting["position"]["player"];
+                }
+                if(current_segmentation[player_id] != null) {
+                    let anchor_original = current_segmentation[player_id].allPoses[0].keypoints.filter(p=>{return p.part=="nose"; })[0].position;
+                    let anchor = {
+                        x: 320 - anchor_original.x,
+                        y: anchor_original.y
+                    };
+                    // console.log("ANCHOR: " + anchor.x + "," + anchor.y);
+                    
+                    let cs = comp_setting.players[overlay_setting["position"]["player"]];  // cs means composition setting for the video
+                    let video_x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
+                    let video_y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
+                    let video_width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
+                    let video_height = composite_canvas.height * (parseFloat(cs.scale.replace("%",""))/100);
+                    
+                    let anchorX_on_comp = video_x + (anchor.x * (video_width / 320));
+                    let anchorY_on_comp = video_y + (anchor.y * (video_height / 240));
+                    let width_on_comp = current_overlay.width * (video_width / 320);
+                    let height_on_comp = current_overlay.height * (video_height / 240); 
 
+                    let overlayX_on_comp = anchorX_on_comp - (width_on_comp / 2);
+                    let overlayY_on_comp = anchorY_on_comp - (height_on_comp / 2);
+
+                    if (overlay_setting["position"]["offset"]) {
+                        overlayX_on_comp += overlay_setting["position"]["offset"]["x"];
+                        overlayY_on_comp += overlay_setting["position"]["offset"]["y"];
+                    }
+                    comp_ctx.drawImage(current_overlay, overlayX_on_comp, overlayY_on_comp, width_on_comp, height_on_comp);
+                }
+            }
+            
+        }
+    },50);
+    
 }
 
 
 async function perform(net, originalVideoElement, targetCanvasElement) {
+    let originalVideoID = originalVideoElement.id.replace("vid_","");
     // let video = document.querySelector("#local_vid");
-    const segmentation = await net.segmentPerson(originalVideoElement,{
+    let segmentation = await net.segmentPerson(originalVideoElement,{
         architecture:"MobileNetV1",
         internalResolution: 'full',
-        outputStride:16,
+        outputStride:4,
         multiplier:1,
         quantBytes:4,
         segmentationThreshold: 0.6,
@@ -401,11 +495,13 @@ async function perform(net, originalVideoElement, targetCanvasElement) {
     // const edgeBlurAmount = 2;
     // const flipHorizontal = false;
     // Painting Mask
-    // bodyPix.drawMask(canvas, video, mask, 0.6, 1, false);
+    // bodyPix.drawMask(targetCanvasElement, originalVideoElement, mask, 0.6, 1, false);
     // drawPersonOnly(targetCanvasElement, originalVideoElement, mask, 1);
     
-    // Drawing it on temporary canvas
-    let originalVideoID = originalVideoElement.id.replace("vid_","");
+    // Saving current segmentation for the composition
+    current_segmentation[originalVideoID] = segmentation;
+
+    // Drawing it on temporary canvas    
     if (typeof local_canvas_list[originalVideoID] === "undefined") {
         local_canvas_list[originalVideoID] = document.createElement("canvas");
         local_canvas_list[originalVideoID].width = 320; 
@@ -413,6 +509,8 @@ async function perform(net, originalVideoElement, targetCanvasElement) {
         local_canvas_list_flipped[originalVideoID] = document.createElement("canvas");
         local_canvas_list_flipped[originalVideoID].width = 320; 
         local_canvas_list_flipped[originalVideoID].height= 240;
+        local_canvas_list_flipped[originalVideoID].getContext("2d").translate(320,0);  // Flipping the drawing context
+        local_canvas_list_flipped[originalVideoID].getContext("2d").scale(-1,1);
     }
     let temp_canvas = local_canvas_list[originalVideoID];
     temp_canvas.getContext('2d').putImageData(mask,0,0);
@@ -420,7 +518,5 @@ async function perform(net, originalVideoElement, targetCanvasElement) {
     temp_canvas.getContext('2d').drawImage(originalVideoElement, 0, 0);
     let ctx_flipped = local_canvas_list_flipped[originalVideoID].getContext("2d");
     ctx_flipped.clearRect(0,0,320,240);
-    ctx_flipped.translate(320, 0);
-    ctx_flipped.scale(-1, 1);
     ctx_flipped.drawImage(temp_canvas, 0, 0);
 }

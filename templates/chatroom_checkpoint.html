@@ -17,6 +17,9 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
 
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0"></script>    
+
     <script src="{{url_for('static', filename='chatroom_checkpoint.js')}}"></script>
     <!-- custom css -->
     <link rel="stylesheet" href="{{url_for('static', filename='style.css')}}">
@@ -58,14 +61,10 @@
                 </div>                
                 <div class="shadow p-0">
                     <div class="vid-wrapper" style="width: 100%; background-color: rgb(20,20,20);">
-                        <video id="local_vid" autoplay muted style="max-height: 400px; max-width: 100%;"></video>
+                        <video id="local_vid" width="320" height="240" autoplay muted ></video>
+                        <canvas id="local_vid_canvas" width="320" height="240" ></canvas>
                     </div>
                     <div class="p-3 w-100 bg-light" >
-                        <button id="bttn_mute" class="btn btn-lg btn-outline-secondary rounded-circle mx-3">
-                            <span id="mute_icon" class="material-icons pt-2">
-                                mic
-                            </span>
-                        </button>
                         <button id="bttn_vid_mute"class="btn btn-lg btn-outline-secondary rounded-circle mx-3">
                             <span id="vid_mute_icon" class="material-icons pt-2">
                                 videocam
