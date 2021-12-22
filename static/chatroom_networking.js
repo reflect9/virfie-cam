@@ -28,6 +28,7 @@ var default_composition_setting = {
         }
     },
     "background": "mcdonalds-french-fries-on-tray.jpeg",
+    "audio": "0001.mp3",
     "overlay": {
         "filename":"cat.png",
         // "position": {
@@ -46,6 +47,11 @@ var default_composition_setting = {
         }
     }
 };
+
+// for audio
+let memory = null;
+let isPlayAudio = false;
+let audio = new Audio();
 
 function showAvailableWebcams(){
     navigator.mediaDevices.enumerateDevices()
@@ -335,9 +341,59 @@ function toggle_video_composition(){
         composition_interval = undefined;
         document.querySelector("button#start_scene").innerHTML = "Start Video Composition";
     }else {
+        start_audio();
         start_video_composition();
         document.querySelector("button#start_scene").innerHTML = "Stop Video Composition";
     }
+}
+
+function start_audio(){
+    setInterval(() => {
+        // if there is a audio that's already playing.
+        if (isPlayAudio) {
+            return;
+        }
+
+        let comp_setting = JSON.parse(document.getElementById("composition_setting").value);
+        const current_audio = comp_setting["audio"];
+        
+        if (current_audio && (current_audio !== memory)) {
+            audio.src = `https://virfie-sound.s3.ap-northeast-2.amazonaws.com/${current_audio}`;
+            audio.loop = true;
+            audio.load();
+
+            audio.play();
+
+            memory = current_audio;
+        }
+    }, 50)
+}
+
+function play_audio(title) {
+    // if there is a audio that's already playing.
+    if (isPlayAudio || (title === memory)) {
+        return;
+    }
+
+    // pause previous audio
+    audio.pause();
+
+    isPlayAudio = true;
+    audio.src = `https://virfie-sound.s3.ap-northeast-2.amazonaws.com/${title}`;
+    audio.loop = true;
+    audio.load();
+    
+    audio.play();
+
+    memory = title;
+}
+
+function stop_audio() {
+    // if there is no audio to stop
+    if (!isPlayAudio) return;
+
+    isPlayAudio = false;
+    audio.pause();
 }
 
 function start_video_composition(){
@@ -368,6 +424,13 @@ function start_video_composition(){
         
         // Load background image if the image file has not loaded (or changed)
         if (comp_setting["background"]) {
+            // for example
+            if (comp_setting["background"] === "mcdonalds-french-fries-on-tray.jpeg") {
+                play_audio("0003.mp3")
+            } else {
+                stop_audio();
+            }
+
             if (typeof current_bg_name == "undefined" || comp_setting["background"]!=current_bg_name) {
                 console.log("loading "+ comp_setting["background"]);
                 let bg_img = new Image();
@@ -467,7 +530,6 @@ function start_video_composition(){
                     comp_ctx.drawImage(current_overlay, overlayX_on_comp, overlayY_on_comp, width_on_comp, height_on_comp);
                 }
             }
-            
         }
     },50);
     
