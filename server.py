@@ -122,9 +122,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if (args.env == 'production'):
-        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-        ssl_context.load_cert_chain(certfile="./fullchain.pem", keyfile="./privkey.pem", password="hi")
-        app.run(host="0.0.0.0", port=443, ssl_context=ssl_context)
-        socketio.run(app, host="0.0.0.0", port=443, ssl_context=ssl_context, debug=True)
-
-    socketio.run(app, host="0.0.0.0", debug=True)
+        socketio.run(app, host="0.0.0.0", port=443, keyfile="privkey.pem", certfile="fullchain.pem", debug=True)
+    else:
+        socketio.run(app, host="0.0.0.0", debug=True)
