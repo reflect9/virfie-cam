@@ -3,20 +3,29 @@ var myVideo;
 document.addEventListener("DOMContentLoaded", (event)=>{
     myVideo = document.getElementById("local_vid");
     myVideo.onloadeddata = ()=>{console.log("W,H: ", myVideo.videoWidth, ", ", myVideo.videoHeight);};
-    var muteBttn = document.getElementById("bttn_mute");
-    var muteVidBttn = document.getElementById("bttn_vid_mute");
+    // var muteBttn = document.getElementById("bttn_mute");
+    // var muteVidBttn = document.getElementById("bttn_vid_mute");
     var callEndBttn = document.getElementById("call_end");
 
-    muteBttn.addEventListener("click", (event)=>{
-        audioMuted = !audioMuted;
-        setAudioMuteState(audioMuted);        
-    });    
-    muteVidBttn.addEventListener("click", (event)=>{
-        videoMuted = !videoMuted;
-        setVideoMuteState(videoMuted);        
-    });    
+    // muteBttn.addEventListener("click", (event)=>{
+    //     audioMuted = !audioMuted;
+    //     setAudioMuteState(audioMuted);        
+    // });    
+    // muteVidBttn.addEventListener("click", (event)=>{
+    //     videoMuted = !videoMuted;
+    //     setVideoMuteState(videoMuted);        
+    // });    
     callEndBttn.addEventListener("click", (event)=>{
         window.location.replace("/");
+    });
+
+    var nextSceneBtn = document.getElementById("nextScene");
+    if(nextSceneBtn) nextSceneBtn.addEventListener("click", (event)=>{
+        composition.nextScene();
+    });
+    var prevSceneBtn = document.getElementById("prevScene");
+    if(prevSceneBtn) prevSceneBtn.addEventListener("click", (event)=>{
+        composition.prevScene();
     });
 
     // document.getElementById("room_link").innerHTML=`or the link: <span class="heading-mark">${window.location.href}</span>`;
@@ -33,8 +42,8 @@ function makeVideoElement(element_id, display_name)
 
     wrapper_div.id = "div_"+element_id;
     vid.id = "vid_"+element_id;
-    vid.setAttribute("width","320"); 
-    vid.setAttribute("height","240");
+    vid.setAttribute("width","640"); 
+    vid.setAttribute("height","480");
 
     wrapper_div.className = "video-item";
     vid_wrapper.className = "vid-wrapper";
@@ -70,19 +79,4 @@ function removeVideoElement(element_id)
 function getVideoObj(element_id)
 {
     return document.getElementById("vid_"+element_id);
-}
-
-function setAudioMuteState(flag)
-{
-    let local_stream = myVideo.srcObject;
-    local_stream.getAudioTracks().forEach((track)=>{track.enabled = !flag;});
-    // switch button icon
-    document.getElementById("mute_icon").innerText = (flag)? "mic_off": "mic";
-}
-function setVideoMuteState(flag)
-{
-    let local_stream = myVideo.srcObject;
-    local_stream.getVideoTracks().forEach((track)=>{track.enabled = !flag;});
-    // switch button icon
-    document.getElementById("vid_mute_icon").innerText = (flag)? "videocam_off": "videocam";
 }

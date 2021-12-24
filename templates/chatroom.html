@@ -7,6 +7,8 @@
     <!-- socketio -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js" integrity="sha512-v8ng/uGxkge3d1IJuEo6dJP8JViyvms0cly9pnbfRxT6/31c3dRWxIiwGnMSWwZjHKOuY3EVmijs7k1jz/9bLA==" crossorigin="anonymous"></script>
     
+    
+    
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <!-- jQuery library -->
@@ -15,6 +17,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <!-- Latest compiled JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <!-- lodash -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
 
     <!-- google Material icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -36,63 +41,53 @@
     </script>
     <script src="{{url_for('static', filename='chatroom_ui.js')}}"></script>
     <script src="{{url_for('static', filename='chatroom_networking.js')}}"></script>
+    <script src="{{url_for('static', filename='chatroom_scene_control.js')}}"></script>
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Chat [{{room_id}}]</title>
+    <title>Virfie [{{room_id}}]</title>
 </head>
 <body>
     
-    <div class="heading mb-4">
+    <div class="heading">
         <div class="room-info">
-            <h4>Video Chat</h4>
+            <h4>Virfie</h4>
             Room: {{room_id}}, Nick Name: {{display_name}} Room id: {{room_id}}
         </div>
         <div class="controls">
-            <button id="bttn_mute" class="btn btn-lg btn-outline-secondary rounded-circle">
-                <span id="mute_icon" class="material-icons pt-2">
-                    mic
-                </span>
-            </button>
-            <button id="bttn_vid_mute"class="btn btn-lg btn-outline-secondary rounded-circle">
-                <span id="vid_mute_icon" class="material-icons pt-2">
-                    videocam
-                </span>
-            </button>
-            <button id="call_end" class="btn btn-lg btn-danger rounded-circle">
-                <span class="material-icons pt-2">
-                    call_end
-                </span>
-            </button>
-            <!-- <button id="btn_blur" onclick="loadBodyPix()">Remove Background</button> -->
-        </div>
-
-
-    </div>
-    <div class="div_webcam_selector">
-        <label for="webcam">Choose Your webcam: </label>
-        <select name="webcam" id="select_webcam">
-            <option value="" disabled selected>Select webcam to use</option>
-        </select>
-    </div>    
-    <div class="container-fluid px-0 mx-0">
-        <div id="div_local_vid">
-            <div class="vid-wrapper">
-                <label class="overlay_message">Choose camera first</label>
-                <video id="local_vid" width="320" height="240" autoplay muted></video>
-                <canvas id="local_vid_canvas" width="320" height="240" ></canvas>
-            </div>
-            <div id="video_grid" class="video-grid"></div>
-        </div>
-        <div id="div_composite_video">
+            <button id="call_end" class="btn btn-warning">Exit Room</button>
             <button id="start_scene" class="btn btn-info" onclick="toggle_video_composition()">Start Video Composition</button>
-            <canvas id="composite_vid" width="320" height="240"></canvas>
+            
         </div>
-        <div class="div_composition_setting">
-            <textarea id="composition_setting">
-                
-            </textarea>
+    </div>
+    <div class="main">
+        <div class="div_webcam_selector">
+            <select name="webcam" id="select_webcam">
+                <option value="" disabled selected>Select webcam to use</option>
+            </select>
+            <div id="div_local_vid">
+                <div class="vid-wrapper">
+                    <label class="overlay_message">Choose camera first</label>
+                    <video id="local_vid" width="640" height="480" autoplay muted></video>
+                    <canvas id="local_vid_canvas" width="640" height="480" ></canvas>
+                </div>
+                <div id="video_grid" class="video-grid"></div>
+            </div>
+            <div class="div_composition_setting">
+                <div class="composition_controls">
+                    <button class="btn btn-outline-secondary btn-sm" id="revert">Revert</button>
+                    <button class="btn btn-outline-secondary btn-sm" id="share">Share</button>
+                    <button class="btn btn-outline-secondary btn-sm" id="prevScene">&larr; Prev</button>
+                    <button class="btn btn-outline-secondary btn-sm" id="nextScene">&rarr; Next</button>
+                </div>
+                <textarea id="composition_setting"></textarea>
+            </div>
+        </div>    
+        <div id="div_composite_video">
+            <canvas id="composite_vid"></canvas>
         </div>
-    </div>    
+        
+    </div>
+    
 </body>
 </html>

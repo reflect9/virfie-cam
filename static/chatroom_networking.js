@@ -5,47 +5,13 @@ var local_canvas_list_flipped = {};
 var remove_bg_interval, composition_interval;
 let bodyPixInstance;
 let current_bg, current_bg_name;
-let current_overlay, current_overlay_info;
 let current_segmentation = {};
+let overlays;
+
 
 // socketio 
 var protocol = window.location.protocol;
 var socket = io(protocol + '//' + document.domain + ':' + location.port, {autoConnect: false});
-
-var default_composition_setting = {
-    "players": {
-        "1": {
-            "z-index": 100,
-            "x": "-10%",
-            "y": "40%",
-            "scale": "60%"
-        },
-        "2": {
-            "z-index": 101,
-            "x": "30%",
-            "y": "20%",
-            "scale": "85%"
-        }
-    },
-    "background": "mcdonalds-french-fries-on-tray.jpeg",
-    "overlay": {
-        "filename":"cat.png",
-        // "position": {
-        //     "type": "coordinate",
-        //     "x":50,
-        //     "y":100
-        // }
-        "position":{
-            "type": "tracking",
-            "player":"1",
-            "body_part": "head",
-            "offset":{
-                "x":0,
-                "y":-10
-            }
-        }
-    }
-};
 
 function showAvailableWebcams(){
     navigator.mediaDevices.enumerateDevices()
@@ -68,8 +34,8 @@ function startCamera(deviceId) {
     navigator.mediaDevices.getUserMedia({
         audio:true,
         video:{
-            width:{ min:320, max:320, ideal:320 },
-            height:{ min:240, max:240, ideal:240 },
+            width:{ min:640, max:640, ideal:640 },
+            height:{ min:480, max:480, ideal:480 },
             deviceId: { exact: deviceId }
         }
     })
@@ -77,8 +43,8 @@ function startCamera(deviceId) {
         console.log("Camera loaded");
         myVideo.srcObject = stream;
         camera_allowed = true;
-        setAudioMuteState(audioMuted);                
-        setVideoMuteState(videoMuted);
+        // setAudioMuteState(audioMuted);                
+        // setVideoMuteState(videoMuted);
         //start the socketio connection
         console.log("Connecting Socket");
         socket.connect();
@@ -91,7 +57,7 @@ function startCamera(deviceId) {
 
 document.addEventListener("DOMContentLoaded", async (event)=>{
     console.log("Start loading bodypix");
-    document.getElementById("composition_setting").value = JSON.stringify(default_composition_setting, null, 4);
+    // document.getElementById("composition_setting").value = JSON.stringify(default_composition_setting, null, 4);
     bodyPix.load({ // BodyPix (https://github.com/tensorflow/tfjs-models/tree/master/body-pix)
         architecture: 'MobileNetV1',
         multiplier: 0.75,
@@ -328,9 +294,7 @@ function handleTrackEvent(event, peer_id)
 
 
 function toggle_video_composition(){
-    if (remove_bg_interval) {
-        clearInterval(remove_bg_interval);
-        remove_bg_interval = undefined;
+    if (composition_interval) {
         clearInterval(composition_interval);
         composition_interval = undefined;
         document.querySelector("button#start_scene").innerHTML = "Start Video Composition";
@@ -364,7 +328,8 @@ function start_video_composition(){
         });
         
         // Start video composition
-        let comp_setting = JSON.parse(document.getElementById("composition_setting").value);
+        // let comp_setting = JSON.parse(document.getElementById("composition_setting").value);
+        comp_setting = composition.getCurrentComposition();
         
         // Load background image if the image file has not loaded (or changed)
         if (comp_setting["background"]) {
@@ -415,61 +380,72 @@ function start_video_composition(){
             }
         });
         // Load overlay image if the image file has not loaded (or changed)
-        if (comp_setting["overlay"]) {
-            if (typeof current_overlay_info == "undefined" || comp_setting["overlay"]["filename"]!=current_overlay_info["filename"]) {
-                // console.log("loading "+ comp_setting["overlay"]);
-                let overlay_img = new Image();
-                overlay_img.src = "/static/"+comp_setting["overlay"]["filename"];
-                overlay_img.onload = ()=>{ 
-                    current_overlay = overlay_img;
-                    current_overlay_info = comp_setting["overlay"];
-                };
-            }
-        }
-        if(current_overlay) {
-            let x, y;
-            let overlay_setting = comp_setting["overlay"];
-            if (overlay_setting["position"]["type"] == "coordinate") {
-                x = overlay_setting["position"]["x"];
-                y = overlay_setting["position"]["y"];
-            } else if(overlay_setting["position"]["type"] == "tracking") {
-                let player_id; ;
-                if(overlay_setting["position"]["player"]==myName) { player_id = "local_vid"; }
-                else {
-                    player_id = "div_" + overlay_setting["position"]["player"];
-                }
-                if(current_segmentation[player_id] != null) {
-                    let anchor_original = current_segmentation[player_id].allPoses[0].keypoints.filter(p=>{return p.part=="nose"; })[0].position;
-                    let anchor = {
-                        x: 320 - anchor_original.x,
-                        y: anchor_original.y
-                    };
-                    // console.log("ANCHOR: " + anchor.x + "," + anchor.y);
-                    
-                    let cs = comp_setting.players[overlay_setting["position"]["player"]];  // cs means composition setting for the video
-                    let video_x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
-                    let video_y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
-                    let video_width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
-                    let video_height = composite_canvas.height * (parseFloat(cs.scale.replace("%",""))/100);
-                    
-                    let anchorX_on_comp = video_x + (anchor.x * (video_width / 320));
-                    let anchorY_on_comp = video_y + (anchor.y * (video_height / 240));
-                    let width_on_comp = current_overlay.width * (video_width / 320);
-                    let height_on_comp = current_overlay.height * (video_height / 240); 
-
-                    let overlayX_on_comp = anchorX_on_comp - (width_on_comp / 2);
-                    let overlayY_on_comp = anchorY_on_comp - (height_on_comp / 2);
-
-                    if (overlay_setting["position"]["offset"]) {
-                        overlayX_on_comp += overlay_setting["position"]["offset"]["x"];
-                        overlayY_on_comp += overlay_setting["position"]["offset"]["y"];
+        // if (comp_setting["overlays"]) {
+            // // Check if the overlays information has been updated
+            // if (typeof overlays == "undefined" || _.isEqual(comp_setting["overlays"],overlays)==false) {
+            //     console.log("New overlay setting is detected");
+            //     overlays = comp_setting["overlays"];
+            //     let overlay_img = new Image();
+            //     overlay_img.src = "/static/"+comp_setting["overlay"]["filename"];
+            //     overlay_img.onload = ()=>{ 
+            //         current_overlay = overlay_img;
+            //         current_overlay_info = comp_setting["overlay"];
+            //     };
+            // }
+        // }
+        if(comp_setting["overlays"]) {
+            comp_setting["overlays"].forEach(overlay_setting =>{
+                let x, y;
+                let overlay_img = composition.overlayResources[overlay_setting.filename];
+                if (overlay_img == null) return;
+                if (overlay_setting["position"]["type"] == "coordinate") {
+                    x = overlay_setting["position"]["x"];
+                    y = overlay_setting["position"]["y"];
+                } else if(overlay_setting["position"]["type"] == "tracking") {
+                    let player_id; ;
+                    if(overlay_setting["position"]["player"]==myName) { player_id = "local_vid"; }
+                    else {
+                        player_id = "div_" + overlay_setting["position"]["player"];
                     }
-                    comp_ctx.drawImage(current_overlay, overlayX_on_comp, overlayY_on_comp, width_on_comp, height_on_comp);
+                    if(current_segmentation[player_id] != null) {
+                        let anchor_obj = current_segmentation[player_id].allPoses[0].keypoints
+                        .filter(p=>{return p.part==overlay_setting["position"]["body_part"]; })[0];
+                        if (anchor_obj.score < 0.7) return;  // 0.7 is the threshold to show / not show the overlay
+                        let anchor_original = anchor_obj.position;
+                        let anchor = {
+                            x: 640 - anchor_original.x,
+                            y: anchor_original.y
+                        };
+                        // console.log("ANCHOR: " + anchor.x + "," + anchor.y);
+                        
+                        let cs = comp_setting.players[overlay_setting["position"]["player"]];  // cs means composition setting for the video
+                        let video_x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
+                        let video_y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
+                        let video_width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
+                        let video_height = composite_canvas.height * (parseFloat(cs.scale.replace("%",""))/100);
+                        
+                        let anchorX_on_comp = video_x + (anchor.x * (video_width / 640));
+                        let anchorY_on_comp = video_y + (anchor.y * (video_height / 480));
+                        let width_on_comp = overlay_img.width * (video_width / 640);
+                        let height_on_comp = overlay_img.height * (video_height / 480); 
+
+                        let overlayX_on_comp = anchorX_on_comp - (width_on_comp / 2);
+                        let overlayY_on_comp = anchorY_on_comp - (height_on_comp / 2);
+
+                        if (overlay_setting["position"]["offset"]) {
+                            overlayX_on_comp += overlay_setting["position"]["offset"]["x"];
+                            overlayY_on_comp += overlay_setting["position"]["offset"]["y"];
+                        }
+                        if (overlay_setting["position"]["scane"]) {
+                            width_on_comp = width_on_comp * overlay_setting["position"]["scale"];
+                            height_on_comp = height_on_comp * overlay_setting["position"]["scale"];
+                        }
+                        comp_ctx.drawImage(overlay_img, overlayX_on_comp, overlayY_on_comp, width_on_comp, height_on_comp);
+                    }
                 }
-            }
-            
+            });
         }
-    },50);
+    },100);
     
 }
 
@@ -504,12 +480,12 @@ async function perform(net, originalVideoElement, targetCanvasElement) {
     // Drawing it on temporary canvas    
     if (typeof local_canvas_list[originalVideoID] === "undefined") {
         local_canvas_list[originalVideoID] = document.createElement("canvas");
-        local_canvas_list[originalVideoID].width = 320; 
-        local_canvas_list[originalVideoID].height= 240;
+        local_canvas_list[originalVideoID].width = 640; 
+        local_canvas_list[originalVideoID].height= 480;
         local_canvas_list_flipped[originalVideoID] = document.createElement("canvas");
-        local_canvas_list_flipped[originalVideoID].width = 320; 
-        local_canvas_list_flipped[originalVideoID].height= 240;
-        local_canvas_list_flipped[originalVideoID].getContext("2d").translate(320,0);  // Flipping the drawing context
+        local_canvas_list_flipped[originalVideoID].width = 640; 
+        local_canvas_list_flipped[originalVideoID].height= 480;
+        local_canvas_list_flipped[originalVideoID].getContext("2d").translate(640,0);  // Flipping the drawing context
         local_canvas_list_flipped[originalVideoID].getContext("2d").scale(-1,1);
     }
     let temp_canvas = local_canvas_list[originalVideoID];
@@ -517,6 +493,6 @@ async function perform(net, originalVideoElement, targetCanvasElement) {
     temp_canvas.getContext('2d').globalCompositeOperation = "source-in";
     temp_canvas.getContext('2d').drawImage(originalVideoElement, 0, 0);
     let ctx_flipped = local_canvas_list_flipped[originalVideoID].getContext("2d");
-    ctx_flipped.clearRect(0,0,320,240);
+    ctx_flipped.clearRect(0,0,640,480);
     ctx_flipped.drawImage(temp_canvas, 0, 0);
 }
