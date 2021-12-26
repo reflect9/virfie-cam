@@ -28,6 +28,17 @@ document.addEventListener("DOMContentLoaded", (event)=>{
         composition.prevScene();
     });
 
+    var composition_editor = document.getElementById("composition_editor");
+    composition_editor.addEventListener("keyup",(event)=>{
+        console.log("COMPOSITON CHANGED");
+        composition = new Composition();
+        composition.loadScenario(JSON.parse(event.target.value));
+    });
+
+    document.getElementById("select_scenario").addEventListener("change",(event)=>{
+        console.log(event.target.value + " is selected as your scenario.");
+        composition.loadScenario(scenarios[event.target.value]);
+    });
     // document.getElementById("room_link").innerHTML=`or the link: <span class="heading-mark">${window.location.href}</span>`;
 
 });
@@ -79,4 +90,22 @@ function removeVideoElement(element_id)
 function getVideoObj(element_id)
 {
     return document.getElementById("vid_"+element_id);
+}
+
+function take_snapshot() {
+    let composite_canvas = document.getElementById("composite_vid");
+    let snapshot_image = composite_canvas.toDataURL();
+    // Creating image object in the snapshot_list > ul > li 
+    let li = document.createElement("li");
+    let img_el = document.createElement("img");
+    img_el.src = snapshot_image;
+    li.appendChild(img_el);
+    let ul = document.querySelector("#snapshot_list ul");
+    let existingSnapshots = ul.querySelectorAll("li");
+    ul.insertBefore(li, existingSnapshots[0]);   
+}
+
+function toggle_fullscreen() {
+    let vEl = document.querySelector("#composite_vid_wrapper");
+    vEl.classList.toggle("fullscreen");
 }

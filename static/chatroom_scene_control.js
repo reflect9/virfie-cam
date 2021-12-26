@@ -1,70 +1,3 @@
-
-var default_scenario = {
-    "scenes":[
-        {
-            "title": "Club Entrance",
-            "players": {
-                "1": {
-                    "z-index": 100,
-                    "x": "20%",
-                    "y": "0%",
-                    "scale": "100%"
-                },
-                "2": {
-                    "z-index": 101,
-                    "x": "30%",
-                    "y": "20%",
-                    "scale": "85%"
-                }
-            },
-            "background": "virfie_entrance-100.jpg"
-        },
-        {
-            "title": "Bar",
-            "players": {
-                "1": {
-                    "z-index": 100,
-                    "x": "-10%",
-                    "y": "40%",
-                    "scale": "100%"
-                },
-                "2": {
-                    "z-index": 101,
-                    "x": "30%",
-                    "y": "20%",
-                    "scale": "85%"
-                },
-                "3": {
-                    "z-index": 102,
-                    "x": "10%",
-                    "y": "30%",
-                    "scale": "75%"
-                }
-            },
-            "background": "virfie_bar1-100.jpg",
-            "overlays": [
-                {
-                    "filename":"virfie_beer.png",
-                    // "position": {
-                    //     "type": "coordinate",
-                    //     "x":50,
-                    //     "y":100
-                    // }
-                    "position":{
-                        "type": "tracking",
-                        "player":"1",
-                        "body_part": "rightWrist",
-                        "offset":{
-                            "x":0,
-                            "y":-10
-                        },
-                        "scale": 1.5
-                    }
-                }
-            ]
-        }
-    ]
-};
 /*  TYPES OF body_parts
 0: {score: 0.9970370531082153, part: 'nose', position: {…}}
 1: {score: 0.929119884967804, part: 'leftEye', position: {…}}
@@ -140,16 +73,23 @@ class Composition {
     currentSceneIdx; // current scene index (e.g. 0,1,...)
     overlayResources;
     currentFrame;
-    constructor(inputScenario) {
-        this.scenario = inputScenario;
-        this.scenes = this.scenario.scenes;
+    constructor() {
         this.currentSceneIdx = 0;
         this.overlayResources = {};
         this.currentFrame = 0;
+    }
+    loadScenario = (inputScenario) => {
+        this.showScenarioOnUI(inputScenario);
+        this.scenario = inputScenario;
+        this.scenes = this.scenario.scenes;
         this.loadResources();
     }
-
-    getCurrentScene = () => { return this.scenes[this.currentSceneIdx]; }
+    showScenarioOnUI = (inputScenario) => {
+        document.getElementById("composition_editor").value = JSON.stringify(inputScenario, null, 3);
+    }
+    getCurrentScene = () => { 
+        return this.scenes[this.currentSceneIdx]; 
+    }
     getScene = (sceneIdx) => { return this.scenes[sceneIdx]; }
     loadResources = () => {
         this.scenes.forEach(scene=>{
@@ -187,4 +127,9 @@ class Composition {
     }
 }
 
-let composition = new Composition(default_scenario);
+let composition;
+document.addEventListener("DOMContentLoaded", (event)=>{
+    let scenario_to_load = document.querySelector("#select_scenario").value;
+    composition = new Composition();
+    composition.loadScenario(scenarios[scenario_to_load]);
+});
