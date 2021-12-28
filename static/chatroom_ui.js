@@ -37,6 +37,7 @@ document.addEventListener("DOMContentLoaded", (event)=>{
 
     document.getElementById("select_scenario").addEventListener("change",(event)=>{
         console.log(event.target.value + " is selected as your scenario.");
+        audio.pause();
         composition.loadScenario(scenarios[event.target.value]);
     });
     // document.getElementById("room_link").innerHTML=`or the link: <span class="heading-mark">${window.location.href}</span>`;
@@ -100,6 +101,20 @@ function take_snapshot() {
     let img_el = document.createElement("img");
     img_el.src = snapshot_image;
     li.appendChild(img_el);
+    let ul = document.querySelector("#snapshot_list ul");
+    let existingSnapshots = ul.querySelectorAll("li");
+    ul.insertBefore(li, existingSnapshots[0]);   
+}
+function take_snapshot_framed(x,y,width,height,angle){
+    let composite_canvas = document.getElementById("composite_vid");
+    let snapshot_image = composite_canvas.toDataURL();
+    let crop_canvas = document.createElement("canvas");
+    crop_canvas.width = width; crop_canvas.height = height;
+    let crop_ctx = crop_canvas.getContext("2d");
+    crop_ctx.drawImage(composite_canvas, x, y, width, height, 0, 0, width, height);
+    // 
+    let li = document.createElement("li");
+    li.appendChild(crop_canvas);
     let ul = document.querySelector("#snapshot_list ul");
     let existingSnapshots = ul.querySelectorAll("li");
     ul.insertBefore(li, existingSnapshots[0]);   

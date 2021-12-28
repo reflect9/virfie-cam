@@ -319,10 +319,11 @@ function start_audio(){
 
         // let comp_setting = JSON.parse(document.getElementById("composition_setting").value);
         let comp_setting = composition.getCurrentComposition();
-        const current_audio = comp_setting["audio"];
+        if(typeof comp_setting["audio"] == "undefined") return;
         
+        const current_audio = comp_setting["audio"];
         if (current_audio && (current_audio !== memory)) {
-            audio.src = `https://virfie-sound.s3.ap-northeast-2.amazonaws.com/${current_audio}`;
+            audio.src = current_audio;
             audio.loop = true;
             audio.load();
 
@@ -343,7 +344,7 @@ function play_audio(title) {
     audio.pause();
 
     isPlayAudio = true;
-    audio.src = `https://virfie-sound.s3.ap-northeast-2.amazonaws.com/${title}`;
+    audio.src = title;
     audio.loop = true;
     audio.load();
     
@@ -460,8 +461,17 @@ function start_video_composition(){
         if(comp_setting["overlays"]) {
             comp_setting["overlays"].forEach(overlay_setting =>{
                 let x, y;
-                let overlay_img = composition.overlayResources[overlay_setting.filename];
-                if (overlay_img == null) return;
+                let overlay_img_dict = composition.overlayResources[overlay_setting.name];
+                let overlay_img_list = Object.keys(overlay_img_dict).sort().map(i=>{return overlay_img_dict[i];});
+                if (overlay_img_list == null || overlay_img_list.length==0) return;
+                let overlay_img;
+                if (overlay_img_list.length == 1) overlay_img = overlay_img_list[0];
+                else { // For multiple images, pick the right frame
+                    let img_frame = Math.ceil(new Date().getTime() / 200) % overlay_img_list.length;
+                    // console.log("FRAME:" + img_frame);
+                    overlay_img = overlay_img_list[img_frame];
+                } 
+                ///////
                 if (!overlay_setting["position"]) return;
                 if (overlay_setting["position"]["type"] == "coordinate") {
                     x = overlay_setting["position"]["x"];
@@ -475,7 +485,7 @@ function start_video_composition(){
                     if(current_segmentation[player_id] != null) {
                         let anchor_obj = current_segmentation[player_id].allPoses[0].keypoints
                         .filter(p=>{return p.part==overlay_setting["position"]["body_part"]; })[0];
-                        console.log(anchor_obj.score);
+                        // console.log(player_id + " " + overlay_setting["position"]["body_part"] + " " + anchor_obj.score);
                         if (anchor_obj.score < 0.1) return;  // the threshold to show / not show the overlay
                         let anchor_original = anchor_obj.position;
                         let anchor = {
@@ -522,18 +532,50 @@ function start_video_composition(){
                         if (cond.type=="positions") {
                             // getting positions to check
                             let positions = [];
-                            if (cond.segments.players == "ALL") {
+                            if (typeof cond.segments != "undefined") {
+                                if (cond.segments.players == "ALL") {
+                                    // Iterate all players and add their [body_part] segments to positions
+                                    positions = _.map(current_segmentation, (playerSegmentation,playerID)=>{
+                                        if (playerID=="local_vid") playerID = myName;
+                                        let anchor_obj = playerSegmentation.allPoses[0].keypoints
+                                            .filter(p=>{return p.part==cond.segments.body_part; })[0];
+                                        if (anchor_obj.score < 0.1) return false;  
+                                        let anchor_original = anchor_obj.position;
+                                        let anchor = {
+                                            x: 800 - anchor_original.x,
+                                            y: anchor_original.y
+                                        };
+                                        let cs = comp_setting.players[playerID];  // cs means composition setting for the video
+                                        let video_x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
+                                        let video_y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
+                                        let video_width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
+                                        let video_height = composite_canvas.height * (parseFloat(cs.scale.replace("%",""))/100);
+                                        let anchorX_on_comp = video_x + (anchor.x * (video_width / 800));
+                                        let anchorY_on_comp = video_y + (anchor.y * (video_height / 600));
+                                        return {
+                                            "x":anchorX_on_comp, "y":anchorY_on_comp
+                                        }
+                                    });
+                                    // console.log(positions);
+                                } else {
+                                    // TBD: when we are checking specific players
+                                }
+                            } else if (typeof cond.segments_each_player != "undefined") {
+                                // Case of giving segments for each player separatedly
                                 // Iterate all players and add their [body_part] segments to positions
-                                positions = _.map(current_segmentation, (playerSegmentation,playerID)=>{
-                                    if (playerID=="local_vid") playerID = myName;
+                                positions = _.map(cond.segments_each_player, (seg, playerID)=>{
+                                    let playerSegmentation;
+                                    if (playerID==myName) playerSegmentation = current_segmentation["local_vid"];
+                                    else playerSegmentation = current_segmentation[playerID];
                                     let anchor_obj = playerSegmentation.allPoses[0].keypoints
-                                        .filter(p=>{return p.part==cond.segments.body_part; })[0];
+                                        .filter(p=>{return p.part==seg.body_part; })[0];
                                     if (anchor_obj.score < 0.1) return false;  
                                     let anchor_original = anchor_obj.position;
                                     let anchor = {
                                         x: 800 - anchor_original.x,
                                         y: anchor_original.y
                                     };
+                                    // Translating anchor position to the current composition setting > payer's video section
                                     let cs = comp_setting.players[playerID];  // cs means composition setting for the video
                                     let video_x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
                                     let video_y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
@@ -545,10 +587,8 @@ function start_video_composition(){
                                         "x":anchorX_on_comp, "y":anchorY_on_comp
                                     }
                                 });
-                                // console.log(positions);
-                            } else {
-                                // TBD: when we are checking specific players
                             }
+                            // Checking whether all the positions are within the range
                             let isConditionSatisfied = _.every(positions, (p)=>{
                                 if (p == false) return false;
                                 let min_y = composite_canvas.height * (parseFloat(cond.area.top.replace("%",""))/100);
@@ -578,6 +618,10 @@ function start_video_composition(){
                             }
                         } else if(action.method=="weather_icon_tracker"){
                             filters["weather_icon_tracker"](composite_canvas, current_segmentation, comp_setting);
+                        } else if(action.method=="random_snapshots"){
+                            filters["random_snapshots"](composite_canvas, action.params.interval_in_seconds);
+                        } else if(action.method=="cheers"){
+                            filters["cheers"](composite_canvas);
                         } else {
                             // TBD: other types of action
                         }

@@ -2,6 +2,7 @@ scenarios["space_wiggle"]= {
     "scenes":[
         {
             "title": "Space Wiggle",
+            "audio": "/static/scenarios/1. space wiggle/sound/Space.mp3",
             "players": {
                 "1": {
                     "z-index": 100,

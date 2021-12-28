@@ -214,13 +214,18 @@ canvas {
   display: inline-block;
   margin: 10px;
   padding: 10px;
-  width: 140px;
+  width: 160px;
+  height: 120px;
   animation: expand 0.5s ease-in-out;
   background: #eee;
   border-radius: 7px;
 }
 #snapshot_list li img {
   width: 100%;
+}
+#snapshot_list li canvas {
+  width: 100%;
+  height: 100%;
 }
 #snapshot_list li button#btn_snapshot {
   display: block;
