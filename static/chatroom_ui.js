@@ -28,17 +28,20 @@ document.addEventListener("DOMContentLoaded", (event)=>{
         composition.prevScene();
     });
 
-    var composition_editor = document.getElementById("composition_editor");
-    composition_editor.addEventListener("keyup",(event)=>{
-        console.log("COMPOSITON CHANGED");
-        composition = new Composition();
-        composition.loadScenario(JSON.parse(event.target.value));
-    });
+    // sync composition when users press update button
+    // var composition_editor = document.getElementById("composition_editor");
+    // composition_editor.addEventListener("keyup",(event)=>{
+    //     console.log("COMPOSITON CHANGED");
+    //     composition = new Composition();
+    //     composition.loadScenario(JSON.parse(event.target.value));
+    // });
 
+    // sync composition when users change scenario
     document.getElementById("select_scenario").addEventListener("change",(event)=>{
         console.log(event.target.value + " is selected as your scenario.");
         audio.pause();
-        composition.loadScenario(scenarios[event.target.value]);
+        
+        socket.emit("update-composition", scenarios[event.target.value]);
     });
     // document.getElementById("room_link").innerHTML=`or the link: <span class="heading-mark">${window.location.href}</span>`;
 

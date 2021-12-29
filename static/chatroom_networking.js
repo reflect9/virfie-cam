@@ -111,6 +111,19 @@ socket.on("user-list", (data)=>{
         start_webrtc();
     }    
 });
+socket.on("new-composition", (data) => {
+    composition = new Composition();
+    composition.loadScenario(data["composition"]);
+
+    let title = data["composition"]["scenes"][0]["title"]
+    if (title === "Space Wiggle") {
+        document.getElementById("select_scenario").selectedIndex = 1;
+    } else if (title === "Emotion Tracker") {
+        document.getElementById("select_scenario").selectedIndex = 2;
+    } else if (title === "Club Entrance") {
+        document.getElementById("select_scenario").selectedIndex = 3;
+    }
+})
 
 function closeConnection(peer_id)
 {
@@ -131,6 +144,12 @@ function log_user_list()
     {
         console.log(`${key}: ${_peer_list[key]}`);
     }
+}
+
+function updateConmposition(){
+    let data = JSON.parse(document.getElementById("composition_editor").value);
+
+    socket.emit("update-composition", data);
 }
 
 //---------------[ webrtc ]--------------------    
