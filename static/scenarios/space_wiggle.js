@@ -64,6 +64,7 @@ filters["twirl"] = (originalCanvas, cyclePeriod, angle)=>{
     let timeIdx = Math.sin(new Date().getTime() / cyclePeriod) * angle; // moving between -angle and +angle
     var glCanvas = fx.canvas(); // creating a new canvas using the glfx library
     var texture = glCanvas.texture(originalCanvas);
-    glCanvas.draw(texture).swirl(400, 300, 400, timeIdx).update();
+    // glCanvas.draw(texture).swirl(400, 300, 400, timeIdx).update();
+    glCanvas.draw(texture).hexagonalPixelate(400, 300, 10).update();
     return glCanvas;
 }

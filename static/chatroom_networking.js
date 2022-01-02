@@ -391,13 +391,7 @@ function start_video_composition(){
         
         // Load background image if the image file has not loaded (or changed)
         if (comp_setting["background"]) {
-            // for example
-            if (comp_setting["background"] === "mcdonalds-french-fries-on-tray.jpeg") {
-                play_audio("0003.mp3")
-            } else {
-                stop_audio();
-            }
-
+            
             if (typeof current_bg_name == "undefined" || comp_setting["background"]!=current_bg_name) {
                 console.log("loading "+ comp_setting["background"]);
                 let bg_img = new Image();
@@ -408,8 +402,8 @@ function start_video_composition(){
                 };
             }
         }
-        if(current_bg) comp_ctx.drawImage(current_bg,0,0,composite_canvas.width, composite_canvas.height);
-        else comp_ctx.clearRect(0, 0, composite_canvas.width, composite_canvas.height);
+        // if(current_bg) comp_ctx.drawImage(current_bg,0,0,composite_canvas.width, composite_canvas.height);
+        // else comp_ctx.clearRect(0, 0, composite_canvas.width, composite_canvas.height);
         
         // Displaying webcam streams in the order of z-index
         let display_names_sorted_by_z_index = Object.keys(comp_setting.players).sort((s1,s2)=>{
