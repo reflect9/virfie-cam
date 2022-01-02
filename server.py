@@ -84,6 +84,12 @@ def on_join_room(data):
 
     print("\nusers: ", _users_in_room, "\n")
 
+@socketio.on("update-composition")
+def update_composition(data):
+    sid = request.sid
+    room_id = _room_of_sid[sid]
+
+    socketio.emit("new-composition", {"sid": sid, "composition": data}, broadcast=True, room=room_id)
 
 @socketio.on("disconnect")
 def on_disconnect():
