@@ -57,13 +57,25 @@ scenarios["emotion_tracker"] = {
                     "actions": {
                         "weather_icon_tracker":{
                             "method": "weather_icon_tracker",
-                            "interval_in_seconds":5
+                            "size": {
+                                "width": 200
+                            },
+                            "offset": {
+                                "x":0,
+                                "y":-150
+                            },
+                            "interval_in_seconds":3
                         },
                         
                     }
                 }
             },
-            "background": "scenarios/2. emotion tracker/image/high resolution background/emotion tracker background.jpg"
+            "background": {
+                "name":"Emotion Tracker",
+                "files": [
+                    "scenarios/2. emotion tracker/image/high resolution background/emotion tracker background.jpg"
+                ]
+            }  
         }
     ]
 };
@@ -117,8 +129,10 @@ filters["weather_icon_tracker"] = (originalCanvas, segmentations, comp_setting)=
             console.log("FRAME:" + img_frame);
             overlay_img = overlay_img_list[img_frame];
         }
-        let width = 200; let height = (width / overlay_img.width) * overlay_img.height;
-        ctx.drawImage(overlay_img, pos.x-(width/2), pos.y-(height/2)-300, width, height);
+        let width = comp_setting.triggers.tracking_emotions.actions.weather_icon_tracker.size.width; 
+        let height = (width / overlay_img.width) * overlay_img.height;
+        let offset = comp_setting.triggers.tracking_emotions.actions.weather_icon_tracker.offset;
+        ctx.drawImage(overlay_img, pos.x-(width/2)+offset.x, pos.y-(height/2)+offset.y, width, height);
     });
     return ctx;
 }

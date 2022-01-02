@@ -5,10 +5,13 @@ class Composition {
     currentSceneIdx; // current scene index (e.g. 0,1,...)
     overlayResources;
     backgroundResources;
+    soundResources;
     currentFrame;
     constructor() {
         this.currentSceneIdx = 0;
         this.overlayResources = {};
+        this.backgroundResources = {};
+        this.soundResources = {};
         this.currentFrame = 0;
     }
     loadScenario = (inputScenario) => {
@@ -41,37 +44,14 @@ class Composition {
                 });
             }
             if(typeof scene["background"] != "undefined") {
-                let bg_img = new Image();
-                bg_img.src = "/static/"+scene["background"];
-                bg_img.onload = ()=>{
-                    this.backgroundResources = [this];
-                }
-            }
-            if(typeof scene["backgrounds"] != "undefined" && Array.isArray(scene["backgrounds"])) {
-                composition.backgroundResources = [];
-                Promise.all(scene["backgrounds"].map((bgPath)=>{
-                    return new Promise((resolve)=>{
-                        let bg_img = new Image();
-                        bg_img.src = "/static/"+bgPath;
-                        bg_img.filename = bgPath;
-                        bg_img.onload = ()=>{
-                            composition.backgroundResources.push(bg_img);
-                        }
-                    });
-                })).then(()=>{
-                    console.log(composition.backgroundResources);
+                this.backgroundResources[scene.background.name] = {};
+                scene.background.files.forEach((f,fi)=>{
+                    let bg_img = new Image();
+                    bg_img.src = "/static/"+f;
+                    bg_img.onload = ()=>{
+                        this.backgroundResources[scene.background.name][fi]=bg_img;
+                    }
                 });
-                // scene["backgrounds"].forEach
-                // let backgroundImages = {};
-                // overlay.files.forEach((f,fi) => {
-                //     let overlay_img = new Image();
-                //     overlay_img.src = "/static/"+f;
-                //     overlay_img.filename = f;
-                //     overlay_img.onload = ()=>{ 
-                //         backgroundImages[fi] = overlay_img;
-                //     };
-                // });
-                // this.overlayResources[overlay.name] = backgroundImages;
             }
         });
     }
@@ -81,18 +61,13 @@ class Composition {
     nextFrame = () => {
         this.currentFrame++;
     }
-    getCurrentComposition = () => {
-        // Apply the current frame (TBD)
-        //
-        return this.getCurrentScene();
-    }
     nextScene = () => { 
         this.currentSceneIdx++; 
         if(this.currentSceneIdx >= this.scenes.length) this.currentSceneIdx=this.scenes.length-1;
     }
     prevScene = () => {
         this.currentSceneIdx--;
-        if(this.currentSceneIdx < 0) this.currentSceneIdx = 0;
+        if(this.currentSceneIdx <= 0) this.currentSceneIdx = 0;
     }
 }
 

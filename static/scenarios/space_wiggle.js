@@ -2,7 +2,7 @@ scenarios["space_wiggle"]= {
     "scenes":[
         {
             "title": "Space Wiggle",
-            "audio": "/static/scenarios/1. space wiggle/sound/Space.mp3",
+            // "audio": "/static/scenarios/1. space wiggle/sound/Space.mp3",
             "players": {
                 "1": {
                     "z-index": 100,
@@ -54,7 +54,12 @@ scenarios["space_wiggle"]= {
                     }
                 }
             },
-            "background": "scenarios/1. space wiggle/high resolution background/space wiggle background without cloud.jpg"
+            "background": {
+                "name":"Space Wiggle",
+                "files": [
+                    "scenarios/1. space wiggle/high resolution background/space wiggle background without cloud.jpg"
+                ]
+            }    
         }
     ]
 };
@@ -64,7 +69,7 @@ filters["twirl"] = (originalCanvas, cyclePeriod, angle)=>{
     let timeIdx = Math.sin(new Date().getTime() / cyclePeriod) * angle; // moving between -angle and +angle
     var glCanvas = fx.canvas(); // creating a new canvas using the glfx library
     var texture = glCanvas.texture(originalCanvas);
-    // glCanvas.draw(texture).swirl(400, 300, 400, timeIdx).update();
-    glCanvas.draw(texture).hexagonalPixelate(400, 300, 10).update();
+    glCanvas.draw(texture).swirl(400, 300, 400, timeIdx).update();
+    // glCanvas.draw(texture).hexagonalPixelate(400, 300, 10).update();
     return glCanvas;
 }

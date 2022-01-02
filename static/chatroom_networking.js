@@ -336,11 +336,11 @@ function start_audio(){
             return;
         }
 
-        // let comp_setting = JSON.parse(document.getElementById("composition_setting").value);
-        let comp_setting = composition.getCurrentComposition();
-        if(typeof comp_setting["audio"] == "undefined") return;
+        // let scene_setting = JSON.parse(document.getElementById("composition_setting").value);
+        let scene_setting = composition.getCurrentScene();
+        if(typeof scene_setting["audio"] == "undefined") return;
         
-        const current_audio = comp_setting["audio"];
+        const current_audio = scene_setting["audio"];
         if (current_audio && (current_audio !== memory)) {
             audio.src = current_audio;
             audio.loop = true;
@@ -405,28 +405,31 @@ function start_video_composition(){
         });
         
         // Start video composition
-        // let comp_setting = JSON.parse(document.getElementById("composition_setting").value);
-        comp_setting = composition.getCurrentComposition();
+        // let scene_setting = JSON.parse(document.getElementById("composition_setting").value);
+        scene_setting = composition.getCurrentScene();
         
-        // Load background image if the image file has not loaded (or changed)
-        if (comp_setting["background"]) {
-            
-            if (typeof current_bg_name == "undefined" || comp_setting["background"]!=current_bg_name) {
-                console.log("loading "+ comp_setting["background"]);
-                let bg_img = new Image();
-                bg_img.src = "/static/"+comp_setting["background"];
-                bg_img.onload = ()=>{ 
-                    current_bg = bg_img;
-                    current_bg_name = comp_setting["background"];
-                };
+        // Draw background image from composition.backgroundResources
+        if (scene_setting["background"] && scene_setting["background"]["name"]) {
+            if (composition["backgroundResources"] && composition["backgroundResources"][scene_setting["background"]["name"]]){
+                let bg_dict = composition["backgroundResources"][scene_setting["background"]["name"]];
+                if(Object.keys(bg_dict).length==1) {
+                    let bg_img = bg_dict[0];
+                    if (bg_img) {
+                        comp_ctx.drawImage(bg_img,0,0,composite_canvas.width, composite_canvas.height);
+                    }    
+                } else {
+                    let interval_millisec = scene_setting["background"]["interval"];
+                    if (typeof interval_millisec == "undefined") interval_millisec = 2000;
+                    let bg_frame_index = Math.ceil(new Date().getTime() / interval_millisec) % Object.keys(bg_dict).length;
+                    bg_img = bg_dict[bg_frame_index];
+                    comp_ctx.drawImage(bg_img,0,0,composite_canvas.width, composite_canvas.height);
+                }
             }
         }
-        // if(current_bg) comp_ctx.drawImage(current_bg,0,0,composite_canvas.width, composite_canvas.height);
-        // else comp_ctx.clearRect(0, 0, composite_canvas.width, composite_canvas.height);
         
         // Displaying webcam streams in the order of z-index
-        let display_names_sorted_by_z_index = Object.keys(comp_setting.players).sort((s1,s2)=>{
-            return comp_setting.players[s2]["z-index"] - comp_setting.players[s1]["z-index"];
+        let display_names_sorted_by_z_index = Object.keys(scene_setting.players).sort((s1,s2)=>{
+            return scene_setting.players[s2]["z-index"] - scene_setting.players[s1]["z-index"];
         }).reverse();
         display_names_sorted_by_z_index.forEach((display_name)=>{
             try{
@@ -445,7 +448,7 @@ function start_video_composition(){
                 if (typeof local_canvas_flipped == "undefined") return;
                 else {
                     // Use composition_setting here
-                    let cs = comp_setting.players[display_name];  // cs means composition setting for the video
+                    let cs = scene_setting.players[display_name];  // cs means composition setting for the video
                     let x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
                     let y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
                     let width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
@@ -458,21 +461,21 @@ function start_video_composition(){
             }
         });
         // Load overlay image if the image file has not loaded (or changed)
-        // if (comp_setting["overlays"]) {
+        // if (scene_setting["overlays"]) {
             // // Check if the overlays information has been updated
-            // if (typeof overlays == "undefined" || _.isEqual(comp_setting["overlays"],overlays)==false) {
+            // if (typeof overlays == "undefined" || _.isEqual(scene_setting["overlays"],overlays)==false) {
             //     console.log("New overlay setting is detected");
-            //     overlays = comp_setting["overlays"];
+            //     overlays = scene_setting["overlays"];
             //     let overlay_img = new Image();
-            //     overlay_img.src = "/static/"+comp_setting["overlay"]["filename"];
+            //     overlay_img.src = "/static/"+scene_setting["overlay"]["filename"];
             //     overlay_img.onload = ()=>{ 
             //         current_overlay = overlay_img;
-            //         current_overlay_info = comp_setting["overlay"];
+            //         current_overlay_info = scene_setting["overlay"];
             //     };
             // }
         // }
-        if(comp_setting["overlays"]) {
-            comp_setting["overlays"].forEach(overlay_setting =>{
+        if(scene_setting["overlays"]) {
+            scene_setting["overlays"].forEach(overlay_setting =>{
                 let x, y;
                 let overlay_img_dict = composition.overlayResources[overlay_setting.name];
                 let overlay_img_list = Object.keys(overlay_img_dict).sort().map(i=>{return overlay_img_dict[i];});
@@ -489,6 +492,7 @@ function start_video_composition(){
                 if (overlay_setting["position"]["type"] == "coordinate") {
                     x = overlay_setting["position"]["x"];
                     y = overlay_setting["position"]["y"];
+                    comp_ctx.drawImage(overlay_img, x, y);
                 } else if(overlay_setting["position"]["type"] == "tracking") {
                     let player_id; ;
                     if(overlay_setting["position"]["player"]==myName) { player_id = "local_vid"; }
@@ -507,7 +511,7 @@ function start_video_composition(){
                         };
                         // console.log("ANCHOR: " + anchor.x + "," + anchor.y);
                         
-                        let cs = comp_setting.players[overlay_setting["position"]["player"]];  // cs means composition setting for the video
+                        let cs = scene_setting.players[overlay_setting["position"]["player"]];  // cs means composition setting for the video
                         let video_x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
                         let video_y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
                         let video_width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
@@ -536,8 +540,8 @@ function start_video_composition(){
                 }
             })
         }
-        if(comp_setting["triggers"]) {
-            _.forEach(comp_setting["triggers"], (trg,trg_name)=>{
+        if(scene_setting["triggers"]) {
+            _.forEach(scene_setting["triggers"], (trg,trg_name)=>{
                 // console.log("Checking if " + trg_name + "'s condition is satisfied");
                 try {
                     // STEP 1. Checking if the trigger conditions are all satisfied
@@ -558,7 +562,7 @@ function start_video_composition(){
                                             x: 800 - anchor_original.x,
                                             y: anchor_original.y
                                         };
-                                        let cs = comp_setting.players[playerID];  // cs means composition setting for the video
+                                        let cs = scene_setting.players[playerID];  // cs means composition setting for the video
                                         let video_x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
                                         let video_y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
                                         let video_width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
@@ -589,7 +593,7 @@ function start_video_composition(){
                                         y: anchor_original.y
                                     };
                                     // Translating anchor position to the current composition setting > payer's video section
-                                    let cs = comp_setting.players[playerID];  // cs means composition setting for the video
+                                    let cs = scene_setting.players[playerID];  // cs means composition setting for the video
                                     let video_x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
                                     let video_y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
                                     let video_width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
@@ -630,9 +634,9 @@ function start_video_composition(){
                                 // TBD: other types of filter
                             }
                         } else if(action.method=="weather_icon_tracker"){
-                            filters["weather_icon_tracker"](composite_canvas, current_segmentation, comp_setting);
+                            filters["weather_icon_tracker"](composite_canvas, current_segmentation, scene_setting);
                         } else if(action.method=="random_snapshots"){
-                            filters["random_snapshots"](composite_canvas, action.params.interval_in_seconds);
+                            filters["random_snapshots"](composite_canvas, action.params);
                         } else if(action.method=="cheers"){
                             filters["cheers"](composite_canvas);
                         } else {
@@ -640,7 +644,7 @@ function start_video_composition(){
                         }
                     });
                 } catch(e) {
-                    console.log(e);
+                    // 
                 }
 
 

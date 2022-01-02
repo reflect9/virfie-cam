@@ -42,6 +42,8 @@ document.addEventListener("DOMContentLoaded", (event)=>{
         audio.pause();
         
         socket.emit("update-composition", scenarios[event.target.value]);
+        composition =new Composition();
+        composition.loadScenario(scenarios[event.target.value]);
     });
     // document.getElementById("room_link").innerHTML=`or the link: <span class="heading-mark">${window.location.href}</span>`;
 

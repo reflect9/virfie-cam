@@ -2,7 +2,7 @@ scenarios["club_virfie"]  = {
     "scenes":[
         {
             "title": "Club Entrance",
-            "audio": "/static/scenarios/3. club virfie/sound/club entrance.mp3",
+            // "audio": "/static/scenarios/3. club virfie/sound/club entrance.mp3",
             "players": {
                 "1": {
                     "z-index": 100,
@@ -17,6 +17,14 @@ scenarios["club_virfie"]  = {
                     "scale": "85%"
                 }
             },
+            "overlays": [
+                {
+                    "name":"polaroid",
+                    "files": [
+                        "scenarios/3. club virfie/images/high resolution background/instagram photo frame small.png"
+                    ]
+                },
+            ],
             "triggers": {
                 "gather_at_center": {
                     "conditions": {
@@ -38,17 +46,23 @@ scenarios["club_virfie"]  = {
                         "taking random snapshots": {
                             "method":"random_snapshots",
                             "params": {
-                                "interval_in_seconds":2
+                                "interval_in_seconds":5,
+                                "shutter_sound":"/static/scenarios/3. club virfie/sound/camera-shutter-click-01.mp3"
                             }
                         }
                     }
                 }
             },
-            "background": "scenarios/3. club virfie/images/high resolution background/Club Virfie Entrance.jpg"
+            "background": {
+                "name":"Club Entrance",
+                "files": [
+                    "scenarios/3. club virfie/images/high resolution background/Club Virfie Entrance.jpg"
+                ]
+            }    
         },
         {
             "title": "Bar",
-            "audio": "/static/scenarios/3. club virfie/sound/club bar.mp3",
+            // "audio": "/static/scenarios/3. club virfie/sound/club bar.mp3",
             "players": {
                 "1": {
                     "z-index": 100,
@@ -69,7 +83,12 @@ scenarios["club_virfie"]  = {
                     "scale": "75%"
                 }
             },
-            "background": "scenarios/3. club virfie/images/high resolution background/Club Virfie Bar Background without table.jpg",
+            "background": {
+                "name":"Bar",
+                "files": [
+                    "scenarios/3. club virfie/images/high resolution background/Club Virfie Bar Background without table.jpg"
+                ]
+            },
             "overlays": [
                 {
                     "name":"beer1",
@@ -192,11 +211,30 @@ scenarios["club_virfie"]  = {
                     "scale": "75%"
                 }
             },
-            "backgrounds": [
-                "scenarios/3. club virfie/images/high resolution background/Dance Hall Package/background.gif",
-                "scenarios/3. club virfie/images/high resolution background/Dance Hall Package/crowd.gif"
-            ],
+            "background": {
+                "name":"Dancehall",
+                "interval":500,
+                "files": [
+                    "scenarios/3. club virfie/images/backgroundwithcrowd01.jpg",
+                    "scenarios/3. club virfie/images/backgroundwithcrowd02.jpg",
+                    "scenarios/3. club virfie/images/backgroundwithcrowd03.jpg",
+                    "scenarios/3. club virfie/images/backgroundwithcrowd04.jpg",
+                ]
+            },
             "overlays": [
+                {
+                    "name":"dancehall_lighting",
+                    "files": [
+                        "scenarios/3. club virfie/images/backgroundlight01.png",
+                        "scenarios/3. club virfie/images/backgroundlight02.png",
+                        "scenarios/3. club virfie/images/backgroundlight03.png",
+                        "scenarios/3. club virfie/images/backgroundlight04.png",
+                    ],
+                    "position":{
+                        "type": "coordinate",
+                        "x": 0, "y":0
+                    }
+                },
             ]
         }
     ]
@@ -220,7 +258,13 @@ filters["cheers"] = (originalCanvas)=>{
     return ctx;
 }
 
-filters["random_snapshots"] = (originalCanvas, snapshotInterval)=>{
+filters["random_snapshots"] = (originalCanvas, params)=>{
+    let snapshotInterval = params.interval_in_seconds;
+    let shutter_sound_path = params.shutter_sound;
+    if (shutter_sound_path && typeof composition.soundResources[shutter_sound_path]=="undefined") {
+        // preload the shutter sound mp3 
+        composition.soundResources[shutter_sound_path] = new Audio(shutter_sound_path);
+    }
     // Set up a timer in the composition element -> Taking photos every interval
     let currentTimestamp = new Date().getTime();
     if (typeof composition.lastTimestamp == "undefined") {
@@ -237,16 +281,24 @@ filters["random_snapshots"] = (originalCanvas, snapshotInterval)=>{
     if (timeElapsed < snapshotInterval * 1000) { 
         // Just update the label (without taking picture)
         let ctx = originalCanvas.getContext("2d");
-        ctx.strokeStyle = 'white'; ctx.lineWidth = 10;
-        let frameWidth =320;  let frameHeight = 240;
+        let frame_image = composition.overlayResources["polaroid"][0];
+        let frameWidth =580;  let frameHeight = 600;
         let frameX = composition.photoFrame.center.x - frameWidth/2;
         let frameY = composition.photoFrame.center.y - frameHeight/2;
-        ctx.strokeRect(frameX, frameY, frameWidth, frameHeight);
+        // ctx.rotate(composition.photoFrame.angle);
+        ctx.drawImage(frame_image, 0, 0, 1200, 1286, frameX, frameY, frameWidth, frameHeight);
+        // ctx.rotate(-composition.photoFrame.angle);
+        // DEPRECATED. Drawing photoframe
+        // ctx.strokeStyle = 'white'; ctx.lineWidth = 10;
+        // let frameWidth =320;  let frameHeight = 240;
+        // let frameX = composition.photoFrame.center.x - frameWidth/2;
+        // let frameY = composition.photoFrame.center.y - frameHeight/2;
+        // ctx.strokeRect(frameX, frameY, frameWidth, frameHeight);
     } else {
-        let frameWidth =320;  let frameHeight = 240;
-        let frameX = composition.photoFrame.center.x - frameWidth/2;
-        let frameY = composition.photoFrame.center.y - frameHeight/2;
-        take_snapshot_framed(frameX, frameY, frameWidth, frameHeight, 0);
+        let snapWidth =350;  let snapHeight = 340;
+        let snapX = composition.photoFrame.center.x - snapWidth/2;
+        let snapY = composition.photoFrame.center.y - snapHeight/2;
+        take_snapshot_framed(snapX, snapY, snapWidth, snapHeight, 0);
         // Start the next interval & randomly generate the photoframe position and angle
         composition.lastTimestamp = currentTimestamp;
         composition.photoFrame = {
@@ -254,7 +306,10 @@ filters["random_snapshots"] = (originalCanvas, snapshotInterval)=>{
                 x: (800 / 2) + ((Math.random() - 0.5)*300),
                 y: (600 / 2) + ((Math.random() - 0.5)*200)
             },
-            angle: (Math.random()-0.5) * Math.PI / 10  // Random rotation angle
+            angle: (Math.random()-0.5) * Math.PI / 5  // Random rotation angle
+        }
+        if (composition.soundResources[shutter_sound_path]) {
+            composition.soundResources[shutter_sound_path].play();
         }
         return;
     }
