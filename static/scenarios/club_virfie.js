@@ -2,7 +2,7 @@ scenarios["club_virfie"]  = {
     "scenes":[
         {
             "title": "Club Entrance",
-            // "audio": "/static/scenarios/3. club virfie/sound/club entrance.mp3",
+            "audio": "/static/scenarios/3. club virfie/sound/club entrance.mp3",
             "players": {
                 "1": {
                     "z-index": 100,
@@ -62,7 +62,7 @@ scenarios["club_virfie"]  = {
         },
         {
             "title": "Bar",
-            // "audio": "/static/scenarios/3. club virfie/sound/club bar.mp3",
+            "audio": "/static/scenarios/3. club virfie/sound/club bar.mp3",
             "players": {
                 "1": {
                     "z-index": 100,
@@ -191,6 +191,7 @@ scenarios["club_virfie"]  = {
         },
         {
             "title": "Dancehall",
+            "audio": "/static/scenarios/3. club virfie/sound/club dance hall.mp3",
             "players": {
                 "1": {
                     "z-index": 100,
