@@ -71,6 +71,19 @@ body {
   width: 100%;
   text-align: center;
 }
+.vid-wrapper .display-name {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  background: rgba(100, 100, 100, 0.4);
+  color: white;
+  font-family: sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  height: 20px;
+  width: 20px;
+  text-align: center;
+}
 .vid-wrapper #local_vid {
   /* max-height: 140px; */
   width: 100%;
@@ -102,17 +115,6 @@ body {
   position: relative;
   text-align: center;
   /* padding: 5px;  */
-}
-.display-name {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background: rgba(100, 100, 100, 0.4);
-  color: white;
-  font-family: sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 2px 8px;
 }
 #control_box {
   background-color: #ffffff;
@@ -255,7 +257,11 @@ canvas {
   gap: 8px;
   margin-bottom: 8px;
 }
-.div_composition_setting button {
+.div_composition_setting .composition_controls span.framerate_holder input {
+  width: 50px;
+  height: 100%;
+}
+.div_composition_setting .composition_controls button {
   margin: 0px;
   font-size: 1em;
   flex: 1 0 auto;

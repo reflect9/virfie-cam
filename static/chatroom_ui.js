@@ -1,4 +1,5 @@
 var myVideo;
+var playerIDs = {};
 
 document.addEventListener("DOMContentLoaded", (event)=>{
     myVideo = document.getElementById("local_vid");
@@ -59,8 +60,8 @@ function makeVideoElement(element_id, display_name)
 
     wrapper_div.id = "div_"+element_id;
     vid.id = "vid_"+element_id;
-    vid.setAttribute("width","640"); 
-    vid.setAttribute("height","480");
+    vid.setAttribute("width","800"); 
+    vid.setAttribute("height","600");
 
     wrapper_div.className = "video-item";
     vid_wrapper.className = "vid-wrapper";
@@ -70,9 +71,11 @@ function makeVideoElement(element_id, display_name)
     name_text.setAttribute("name", display_name);
     name_text.innerText = display_name;
 
+    playerIDs[display_name] = element_id;
+
     vid_wrapper.appendChild(vid);
     wrapper_div.appendChild(vid_wrapper);
-    wrapper_div.appendChild(name_text);
+    vid_wrapper.appendChild(name_text);
 
     return wrapper_div;
 }

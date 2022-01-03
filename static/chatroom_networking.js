@@ -38,7 +38,7 @@ function showAvailableWebcams(){
 function startCamera(deviceId) {
     console.log("Start camera");
     navigator.mediaDevices.getUserMedia({
-        audio:true,
+        audio:false,
         video:{
             width:{ min:800, max:800, ideal:800 },
             height:{ min:600, max:600, ideal:600 },
@@ -318,14 +318,18 @@ function handleTrackEvent(event, peer_id)
 
 
 function toggle_video_composition(){
-    if (composition_interval) {
-        clearInterval(composition_interval);
-        composition_interval = undefined;
+    if (typeof frameRequestForComposition !== "undefined") {
+        cancelAnimationFrame(frameRequestForComposition);
+        frameRequestForComposition = undefined;
         document.querySelector("button#start_scene").innerHTML = "Start Video Composition";
+        document.querySelector("button#start_scene").classList.add("btn-primary");
+        document.querySelector("button#start_scene").classList.remove("btn-danger");
     }else {
         start_audio();
         start_video_composition();
         document.querySelector("button#start_scene").innerHTML = "Stop Video Composition";
+        document.querySelector("button#start_scene").classList.remove("btn-primary");
+        document.querySelector("button#start_scene").classList.add("btn-danger");
     }
 }
 
@@ -380,220 +384,204 @@ function stop_audio() {
     audio.pause();
 }
 
+var fps, fpsInterval, startTime, now, then, elapsed, frameRequestForComposition;
+
 function start_video_composition(){
+    fpsInterval = 1000 / parseInt(document.querySelector("#framerate_input").value);
+    then = Date.now();
+    startTime = then;
+    video_composition_worker();
+}
+
+function video_composition_worker(){
+    frameRequestForComposition = requestAnimationFrame(video_composition_worker);
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // Checking how much time has elapsed since the last rendering
+    now = Date.now();
+    elapsed = now - then;
+    if (elapsed < fpsInterval) return;
+    else then = now - (elapsed % fpsInterval);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // After sufficient amount of idel time, run the video composition
     let composite_canvas = document.querySelector("#composite_vid");
-    // Create an interval that regularly processes videos
-    // remove_bg_interval = setInterval(()=>{
-    //     let local_videos = document.querySelectorAll("#div_local_vid video");
-    //     local_videos.forEach(lv=>{
-    //         perform(bodyPixInstance, lv, composite_canvas);
-    //     });
-    // },100);
-
     // Drawing onto the targetCanvas
-    composition_interval = setInterval(()=>{
-        let comp_ctx = composite_canvas.getContext("2d");
-        comp_ctx.width = 800; comp_ctx.height = 600;
-        comp_ctx.globalCompositeOperation = "source-over";
-        
-        // Perform > Removing backgrounds of all local videos and flip horizontally
-        let local_videos = document.querySelectorAll("#div_local_vid video");
-        local_videos.forEach(lv=>{
-            if (lv.readyState == 4) {
-                perform(bodyPixInstance, lv, composite_canvas);
-            }
-        });
-        
-        // Start video composition
-        // let scene_setting = JSON.parse(document.getElementById("composition_setting").value);
-        scene_setting = composition.getCurrentScene();
-        
-        // Draw background image from composition.backgroundResources
-        if (scene_setting["background"] && scene_setting["background"]["name"]) {
-            if (composition["backgroundResources"] && composition["backgroundResources"][scene_setting["background"]["name"]]){
-                let bg_dict = composition["backgroundResources"][scene_setting["background"]["name"]];
-                if(Object.keys(bg_dict).length==1) {
-                    let bg_img = bg_dict[0];
-                    if (bg_img) {
-                        comp_ctx.drawImage(bg_img,0,0,composite_canvas.width, composite_canvas.height);
-                    }    
-                } else {
-                    let interval_millisec = scene_setting["background"]["interval"];
-                    if (typeof interval_millisec == "undefined") interval_millisec = 2000;
-                    let bg_frame_index = Math.ceil(new Date().getTime() / interval_millisec) % Object.keys(bg_dict).length;
-                    bg_img = bg_dict[bg_frame_index];
+    let comp_ctx = composite_canvas.getContext("2d");
+    comp_ctx.width = 800; comp_ctx.height = 600;
+    comp_ctx.globalCompositeOperation = "source-over";
+    
+    // Perform > Removing backgrounds of all local videos and flip horizontally
+    let local_videos = document.querySelectorAll("#div_local_vid video");
+    local_videos.forEach(lv=>{
+        if (lv.readyState == 4) {
+            perform(bodyPixInstance, lv, composite_canvas);
+        }
+    });
+    
+    // Start video composition
+    // let scene_setting = JSON.parse(document.getElementById("composition_setting").value);
+    scene_setting = composition.getCurrentScene();
+    
+    // Draw background image from composition.backgroundResources
+    if (scene_setting["background"] && scene_setting["background"]["name"]) {
+        if (composition["backgroundResources"] && composition["backgroundResources"][scene_setting["background"]["name"]]){
+            let bg_dict = composition["backgroundResources"][scene_setting["background"]["name"]];
+            if(Object.keys(bg_dict).length==1) {
+                let bg_img = bg_dict[0];
+                if (bg_img) {
                     comp_ctx.drawImage(bg_img,0,0,composite_canvas.width, composite_canvas.height);
-                }
+                }    
+            } else {
+                let interval_millisec = scene_setting["background"]["interval"];
+                if (typeof interval_millisec == "undefined") interval_millisec = 2000;
+                let bg_frame_index = Math.ceil(new Date().getTime() / interval_millisec) % Object.keys(bg_dict).length;
+                bg_img = bg_dict[bg_frame_index];
+                comp_ctx.drawImage(bg_img,0,0,composite_canvas.width, composite_canvas.height);
             }
         }
-        
-        // Displaying webcam streams in the order of z-index
-        let display_names_sorted_by_z_index = Object.keys(scene_setting.players).sort((s1,s2)=>{
-            return scene_setting.players[s2]["z-index"] - scene_setting.players[s1]["z-index"];
-        }).reverse();
-        display_names_sorted_by_z_index.forEach((display_name)=>{
-            try{
-                let video_element_id;
-                if(display_name==myName) {
-                    video_element_id = "local_vid";
-                } else {
-                    let video_element = document.querySelector("div.display-name[name='"+display_name+"']");
-                    if (video_element == null) return; // the player has not joined yet
-                    else {
-                        video_element_id = document.querySelector("div.display-name[name='"+display_name+"']")
-                        .closest("div.video-item").id.replace("div_","");
-                    }
-                }
-                let local_canvas_flipped = local_canvas_list_flipped[video_element_id];
-                if (typeof local_canvas_flipped == "undefined") return;
+    }
+    
+    // Displaying webcam streams in the order of z-index
+    let display_names_sorted_by_z_index = Object.keys(scene_setting.players).sort((s1,s2)=>{
+        return scene_setting.players[s2]["z-index"] - scene_setting.players[s1]["z-index"];
+    }).reverse();
+    display_names_sorted_by_z_index.forEach((display_name)=>{
+        try{
+            let video_element_id;
+            if(display_name==myName) {
+                video_element_id = "local_vid";
+            } else {
+                let video_element = document.querySelector("div.display-name[name='"+display_name+"']");
+                if (video_element == null) return; // the player has not joined yet
                 else {
-                    // Use composition_setting here
-                    let cs = scene_setting.players[display_name];  // cs means composition setting for the video
-                    let x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
-                    let y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
-                    let width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
-                    let height = composite_canvas.height * (parseFloat(cs.scale.replace("%",""))/100);
-                    comp_ctx.drawImage(local_canvas_flipped, x, y, width, height);
+                    video_element_id = document.querySelector("div.display-name[name='"+display_name+"']")
+                    .closest("div.video-item").id.replace("div_","");
                 }
-            } catch(e) {
-                console.log(e);
-                return;
             }
-        });
-        // Load overlay image if the image file has not loaded (or changed)
-        // if (scene_setting["overlays"]) {
-            // // Check if the overlays information has been updated
-            // if (typeof overlays == "undefined" || _.isEqual(scene_setting["overlays"],overlays)==false) {
-            //     console.log("New overlay setting is detected");
-            //     overlays = scene_setting["overlays"];
-            //     let overlay_img = new Image();
-            //     overlay_img.src = "/static/"+scene_setting["overlay"]["filename"];
-            //     overlay_img.onload = ()=>{ 
-            //         current_overlay = overlay_img;
-            //         current_overlay_info = scene_setting["overlay"];
-            //     };
-            // }
-        // }
-        if(scene_setting["overlays"]) {
-            scene_setting["overlays"].forEach(overlay_setting =>{
-                let x, y;
-                let overlay_img_dict = composition.overlayResources[overlay_setting.name];
-                let overlay_img_list = Object.keys(overlay_img_dict).sort().map(i=>{return overlay_img_dict[i];});
-                if (overlay_img_list == null || overlay_img_list.length==0) return;
-                let overlay_img;
-                if (overlay_img_list.length == 1) overlay_img = overlay_img_list[0];
-                else { // For multiple images, pick the right frame
-                    let img_frame = Math.ceil(new Date().getTime() / 200) % overlay_img_list.length;
-                    // console.log("FRAME:" + img_frame);
-                    overlay_img = overlay_img_list[img_frame];
-                } 
-                ///////
-                if (!overlay_setting["position"]) return;
-                if (overlay_setting["position"]["type"] == "coordinate") {
-                    x = overlay_setting["position"]["x"];
-                    y = overlay_setting["position"]["y"];
-                    comp_ctx.drawImage(overlay_img, x, y);
-                } else if(overlay_setting["position"]["type"] == "tracking") {
-                    let player_id; ;
-                    if(overlay_setting["position"]["player"]==myName) { player_id = "local_vid"; }
-                    else {
-                        player_id = "div_" + overlay_setting["position"]["player"];
-                    }
-                    if(current_segmentation[player_id] != null) {
-                        let anchor_obj = current_segmentation[player_id].allPoses[0].keypoints
-                        .filter(p=>{return p.part==overlay_setting["position"]["body_part"]; })[0];
-                        // console.log(player_id + " " + overlay_setting["position"]["body_part"] + " " + anchor_obj.score);
-                        if (anchor_obj.score < 0.1) return;  // the threshold to show / not show the overlay
-                        let anchor_original = anchor_obj.position;
-                        let anchor = {
-                            x: 800 - anchor_original.x,
-                            y: anchor_original.y
-                        };
-                        // console.log("ANCHOR: " + anchor.x + "," + anchor.y);
-                        
-                        let cs = scene_setting.players[overlay_setting["position"]["player"]];  // cs means composition setting for the video
-                        let video_x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
-                        let video_y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
-                        let video_width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
-                        let video_height = composite_canvas.height * (parseFloat(cs.scale.replace("%",""))/100);
-                        
-                        let anchorX_on_comp = video_x + (anchor.x * (video_width / 800));
-                        let anchorY_on_comp = video_y + (anchor.y * (video_height / 600));
-                        let width_on_comp = overlay_img.width * (video_width / 800);
-                        let height_on_comp = overlay_img.height * (video_height / 600); 
-
-                        let overlayX_on_comp = anchorX_on_comp - (width_on_comp / 2);
-                        let overlayY_on_comp = anchorY_on_comp - (height_on_comp / 2);
-
-                        if (overlay_setting["position"]["offset"]) {
-                            overlayX_on_comp += overlay_setting["position"]["offset"]["x"];
-                            overlayY_on_comp += overlay_setting["position"]["offset"]["y"];
-                        }
-                        if (overlay_setting["position"]["scale"]) {
-                            width_on_comp = width_on_comp * overlay_setting["position"]["scale"];
-                            height_on_comp = height_on_comp * overlay_setting["position"]["scale"];
-                            overlayX_on_comp -= width_on_comp / 2;
-                            overlayY_on_comp -= height_on_comp / 2;
-                        }
-                        comp_ctx.drawImage(overlay_img, overlayX_on_comp, overlayY_on_comp, width_on_comp, height_on_comp);
-                    }
-                }
-            })
+            let local_canvas_flipped = local_canvas_list_flipped[video_element_id];
+            if (typeof local_canvas_flipped == "undefined") return;
+            else {
+                // Use composition_setting here
+                let cs = scene_setting.players[display_name];  // cs means composition setting for the video
+                let x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
+                let y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
+                let width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
+                let height = composite_canvas.height * (parseFloat(cs.scale.replace("%",""))/100);
+                comp_ctx.drawImage(local_canvas_flipped, x, y, width, height);
+            }
+        } catch(e) {
+            console.log(e);
+            return;
         }
-        if(scene_setting["triggers"]) {
-            _.forEach(scene_setting["triggers"], (trg,trg_name)=>{
-                // console.log("Checking if " + trg_name + "'s condition is satisfied");
-                try {
-                    // STEP 1. Checking if the trigger conditions are all satisfied
-                    let isAllConditionSatisfied = _.every(trg.conditions, (cond)=>{
-                        if (cond.type=="positions") {
-                            // getting positions to check
-                            let positions = [];
-                            if (typeof cond.segments != "undefined") {
-                                if (cond.segments.players == "ALL") {
-                                    // Iterate all players and add their [body_part] segments to positions
-                                    positions = _.map(current_segmentation, (playerSegmentation,playerID)=>{
-                                        if (playerID=="local_vid") playerID = myName;
-                                        let anchor_obj = playerSegmentation.allPoses[0].keypoints
-                                            .filter(p=>{return p.part==cond.segments.body_part; })[0];
-                                        if (anchor_obj.score < 0.1) return false;  
-                                        let anchor_original = anchor_obj.position;
-                                        let anchor = {
-                                            x: 800 - anchor_original.x,
-                                            y: anchor_original.y
-                                        };
-                                        let cs = scene_setting.players[playerID];  // cs means composition setting for the video
-                                        let video_x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
-                                        let video_y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
-                                        let video_width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
-                                        let video_height = composite_canvas.height * (parseFloat(cs.scale.replace("%",""))/100);
-                                        let anchorX_on_comp = video_x + (anchor.x * (video_width / 800));
-                                        let anchorY_on_comp = video_y + (anchor.y * (video_height / 600));
-                                        return {
-                                            "x":anchorX_on_comp, "y":anchorY_on_comp
-                                        }
-                                    });
-                                    // console.log(positions);
-                                } else {
-                                    // TBD: when we are checking specific players
-                                }
-                            } else if (typeof cond.segments_each_player != "undefined") {
-                                // Case of giving segments for each player separatedly
+    });
+    // Load overlay image if the image file has not loaded (or changed)
+    // if (scene_setting["overlays"]) {
+        // // Check if the overlays information has been updated
+        // if (typeof overlays == "undefined" || _.isEqual(scene_setting["overlays"],overlays)==false) {
+        //     console.log("New overlay setting is detected");
+        //     overlays = scene_setting["overlays"];
+        //     let overlay_img = new Image();
+        //     overlay_img.src = "/static/"+scene_setting["overlay"]["filename"];
+        //     overlay_img.onload = ()=>{ 
+        //         current_overlay = overlay_img;
+        //         current_overlay_info = scene_setting["overlay"];
+        //     };
+        // }
+    // }
+    if(scene_setting["overlays"]) {
+        scene_setting["overlays"].forEach(overlay_setting =>{
+            let x, y;
+            let overlay_img_dict = composition.overlayResources[overlay_setting.name];
+            let overlay_img_list = Object.keys(overlay_img_dict).sort().map(i=>{return overlay_img_dict[i];});
+            if (overlay_img_list == null || overlay_img_list.length==0) return;
+            let overlay_img;
+            if (overlay_img_list.length == 1) overlay_img = overlay_img_list[0];
+            else { // For multiple images, pick the right frame
+                let img_frame = Math.ceil(new Date().getTime() / 200) % overlay_img_list.length;
+                // console.log("FRAME:" + img_frame);
+                overlay_img = overlay_img_list[img_frame];
+            } 
+            ///////
+            if (!overlay_setting["position"]) return;
+            if (overlay_setting["position"]["type"] == "coordinate") {
+                x = overlay_setting["position"]["x"];
+                y = overlay_setting["position"]["y"];
+                comp_ctx.drawImage(overlay_img, x, y);
+            } else if(overlay_setting["position"]["type"] == "tracking") {
+                let player_id; ;
+                if(overlay_setting["position"]["player"]==myName) { player_id = "local_vid"; }
+                else {
+                    player_id = playerIDs[overlay_setting["position"]["player"]];
+                    // player_id = "div_" + overlay_setting["position"]["player"];
+                }
+                if(current_segmentation[player_id] != null) {
+                    let anchor_obj = current_segmentation[player_id].allPoses[0].keypoints
+                    .filter(p=>{return p.part==overlay_setting["position"]["body_part"]; })[0];
+                    // console.log(player_id + " " + overlay_setting["position"]["body_part"] + " " + anchor_obj.score);
+                    if (anchor_obj.score < 0.1) return;  // the threshold to show / not show the overlay
+                    let anchor_original = anchor_obj.position;
+                    let anchor = {
+                        x: 800 - anchor_original.x,
+                        y: anchor_original.y
+                    };
+                    // console.log("ANCHOR: " + anchor.x + "," + anchor.y);
+                    
+                    let cs = scene_setting.players[overlay_setting["position"]["player"]];  // cs means composition setting for the video
+                    let video_x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
+                    let video_y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
+                    let video_width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
+                    let video_height = composite_canvas.height * (parseFloat(cs.scale.replace("%",""))/100);
+                    
+                    let anchorX_on_comp = video_x + (anchor.x * (video_width / 800));
+                    let anchorY_on_comp = video_y + (anchor.y * (video_height / 600));
+                    let width_on_comp = overlay_img.width * (video_width / 800);
+                    let height_on_comp = overlay_img.height * (video_height / 600); 
+
+                    let overlayX_on_comp = anchorX_on_comp - (width_on_comp / 2);
+                    let overlayY_on_comp = anchorY_on_comp - (height_on_comp / 2);
+
+                    if (overlay_setting["position"]["offset"]) {
+                        overlayX_on_comp += overlay_setting["position"]["offset"]["x"];
+                        overlayY_on_comp += overlay_setting["position"]["offset"]["y"];
+                    }
+                    if (overlay_setting["position"]["scale"]) {
+                        width_on_comp = width_on_comp * overlay_setting["position"]["scale"];
+                        height_on_comp = height_on_comp * overlay_setting["position"]["scale"];
+                        overlayX_on_comp -= width_on_comp / 2;
+                        overlayY_on_comp -= height_on_comp / 2;
+                    }
+                    comp_ctx.drawImage(overlay_img, overlayX_on_comp, overlayY_on_comp, width_on_comp, height_on_comp);
+                }
+            }
+        })
+    }
+    if(scene_setting["triggers"]) {
+        _.forEach(scene_setting["triggers"], (trg,trg_name)=>{
+            // console.log("Checking if " + trg_name + "'s condition is satisfied");
+            try {
+                // STEP 1. Checking if the trigger conditions are all satisfied
+                let isAllConditionSatisfied = _.every(trg.conditions, (cond)=>{
+                    if (cond.type=="positions") {
+                        // getting positions to check
+                        let positions = [];
+                        if (typeof cond.segments != "undefined") {
+                            if (cond.segments.players == "ALL") {
                                 // Iterate all players and add their [body_part] segments to positions
-                                positions = _.map(cond.segments_each_player, (seg, playerID)=>{
-                                    let playerSegmentation;
-                                    if (playerID==myName) playerSegmentation = current_segmentation["local_vid"];
-                                    else playerSegmentation = current_segmentation[playerID];
+                                positions = _.map(current_segmentation, (playerSegmentation,playerID)=>{
+                                    let display_name;
+                                    if (playerID=="local_vid") display_name = myName;
+                                    else {
+                                        display_name = document.getElementById("div_"+playerID).querySelector(".display-name").getAttribute("name");
+                                    }
                                     let anchor_obj = playerSegmentation.allPoses[0].keypoints
-                                        .filter(p=>{return p.part==seg.body_part; })[0];
+                                        .filter(p=>{return p.part==cond.segments.body_part; })[0];
                                     if (anchor_obj.score < 0.1) return false;  
                                     let anchor_original = anchor_obj.position;
                                     let anchor = {
                                         x: 800 - anchor_original.x,
                                         y: anchor_original.y
                                     };
-                                    // Translating anchor position to the current composition setting > payer's video section
-                                    let cs = scene_setting.players[playerID];  // cs means composition setting for the video
+                                    let cs = scene_setting.players[display_name];  // cs means composition setting for the video
                                     let video_x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
                                     let video_y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
                                     let video_width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
@@ -604,54 +592,95 @@ function start_video_composition(){
                                         "x":anchorX_on_comp, "y":anchorY_on_comp
                                     }
                                 });
-                            }
-                            // Checking whether all the positions are within the range
-                            let isConditionSatisfied = _.every(positions, (p)=>{
-                                if (p == false) return false;
-                                let min_y = composite_canvas.height * (parseFloat(cond.area.top.replace("%",""))/100);
-                                let max_y = composite_canvas.height * (parseFloat(cond.area.bottom.replace("%",""))/100);
-                                let min_x = composite_canvas.width * (parseFloat(cond.area.left.replace("%",""))/100);
-                                let max_x = composite_canvas.width * (parseFloat(cond.area.right.replace("%",""))/100);
-                                return (p.x > min_x) && (p.x < max_x) && (p.y > min_y) && (p.y < max_y);
-                            });
-                            return isConditionSatisfied;
-                            // console.log(isConditionSatisfied);
-                        } else if(cond.type=="pass"){
-                            return true;
-                        } else {
-                            // TBD: for other types of conditions
-                            return true; 
-                        }
-                    });
-                    if (!isAllConditionSatisfied) return;
-                    // STEP 2. Perform actions if all the conditions are satisfied for the trigger
-                    _.forEach(trg.actions, (action, actionTitle)=>{
-                        if(action.method=="image_filter") {
-                            if(action.params.filter.type=="twirl") {
-                                let distortedImage = filters["twirl"](composite_canvas, action.params.filter.cycle, action.params.filter.angle);
-                                comp_ctx.drawImage(distortedImage,0,0);
+                                // console.log(positions);
                             } else {
-                                // TBD: other types of filter
+                                // TBD: when we are checking specific players
                             }
-                        } else if(action.method=="weather_icon_tracker"){
-                            filters["weather_icon_tracker"](composite_canvas, current_segmentation, scene_setting);
-                        } else if(action.method=="random_snapshots"){
-                            filters["random_snapshots"](composite_canvas, action.params);
-                        } else if(action.method=="cheers"){
-                            filters["cheers"](composite_canvas);
-                        } else {
-                            // TBD: other types of action
+                        } else if (typeof cond.segments_each_player != "undefined") {
+                            // Case of giving segments for each player separatedly
+                            // Iterate all players and add their [body_part] segments to positions
+                            positions = _.map(cond.segments_each_player, (seg, display_name)=>{
+                                try{
+                                    let playerSegmentation;
+                                    let playerID;
+                                    if (display_name==myName) {
+                                        playerID = display_name;
+                                        playerSegmentation = current_segmentation["local_vid"];
+                                    }else {
+                                        playerID = playerIDs[display_name];
+                                        playerSegmentation = current_segmentation[playerID];
+                                    }
+                                    if (typeof playerSegmentation == "undefined") return true;
+                                    let anchor_obj = playerSegmentation.allPoses[0].keypoints
+                                        .filter(p=>{return p.part==seg.body_part; })[0];
+                                    if (anchor_obj.score < 0.1) return false;  
+                                    let anchor_original = anchor_obj.position;
+                                    let anchor = {
+                                        x: 800 - anchor_original.x,
+                                        y: anchor_original.y
+                                    };
+                                    // Translating anchor position to the current composition setting > payer's video section
+                                    let cs = scene_setting.players[display_name];  // cs means composition setting for the video
+                                    let video_x = composite_canvas.width * (parseFloat(cs.x.replace("%",""))/100);
+                                    let video_y = composite_canvas.height * (parseFloat(cs.y.replace("%",""))/100);
+                                    let video_width = composite_canvas.width * (parseFloat(cs.scale.replace("%",""))/100);
+                                    let video_height = composite_canvas.height * (parseFloat(cs.scale.replace("%",""))/100);
+                                    let anchorX_on_comp = video_x + (anchor.x * (video_width / 800));
+                                    let anchorY_on_comp = video_y + (anchor.y * (video_height / 600));
+                                    return {
+                                        "x":anchorX_on_comp, "y":anchorY_on_comp
+                                    }
+                                } catch(e){
+                                    console.log(e);
+                                    return false;
+                                }
+                                
+                            });
                         }
-                    });
-                } catch(e) {
-                    // 
-                }
-
-
-            });
-        }
-    },100);
-    
+                        // Checking whether all the positions are within the range
+                        let isConditionSatisfied = _.every(positions, (p)=>{
+                            if (p == true) return true;
+                            if (p == false) return false;
+                            let min_y = composite_canvas.height * (parseFloat(cond.area.top.replace("%",""))/100);
+                            let max_y = composite_canvas.height * (parseFloat(cond.area.bottom.replace("%",""))/100);
+                            let min_x = composite_canvas.width * (parseFloat(cond.area.left.replace("%",""))/100);
+                            let max_x = composite_canvas.width * (parseFloat(cond.area.right.replace("%",""))/100);
+                            return (p.x > min_x) && (p.x < max_x) && (p.y > min_y) && (p.y < max_y);
+                        });
+                        return isConditionSatisfied;
+                        // console.log(isConditionSatisfied);
+                    } else if(cond.type=="pass"){
+                        return true;
+                    } else {
+                        // TBD: for other types of conditions
+                        return true; 
+                    }
+                });
+                if (!isAllConditionSatisfied) return;
+                // STEP 2. Perform actions if all the conditions are satisfied for the trigger
+                _.forEach(trg.actions, (action, actionTitle)=>{
+                    if(action.method=="image_filter") {
+                        if(action.params.filter.type=="twirl") {
+                            let distortedImage = filters["twirl"](composite_canvas, action.params.filter.cycle, action.params.filter.angle);
+                            comp_ctx.drawImage(distortedImage,0,0);
+                        } else {
+                            // TBD: other types of filter
+                        }
+                    } else if(action.method=="weather_icon_tracker"){
+                        filters["weather_icon_tracker"](composite_canvas, current_segmentation, scene_setting);
+                    } else if(action.method=="random_snapshots"){
+                        filters["random_snapshots"](composite_canvas, action.params);
+                    } else if(action.method=="cheers"){
+                        filters["cheers"](composite_canvas);
+                    } else {
+                        // TBD: other types of action
+                    }
+                });
+            } catch(e) {
+                // 
+            }
+        });
+    }
 }
 
 

@@ -6,21 +6,21 @@ scenarios["emotion_tracker"] = {
             "players": {
                 "1": {
                     "z-index": 100,
-                    "x": "20%",
-                    "y": "0%",
-                    "scale": "100%"
+                    "x": "-10%",
+                    "y": "30%",
+                    "scale": "80%"
                 },
                 "2": {
                     "z-index": 101,
-                    "x": "30%",
+                    "x": "10%",
                     "y": "20%",
                     "scale": "85%"
                 },
                 "3": {
                     "z-index": 102,
-                    "x": "70%",
-                    "y": "-20%",
-                    "scale": "65%"
+                    "x": "40%",
+                    "y": "30%",
+                    "scale": "80%"
                 }
             },
             "overlays": [
@@ -33,19 +33,19 @@ scenarios["emotion_tracker"] = {
                 {
                     "name":"cloud",
                     "files": [
-                        "scenarios/2. emotion tracker/image/cloud.png"
+                        "scenarios/2. emotion tracker/image/cloudy.png"
                     ]
                 },
                 {
                     "name":"rain",
                     "files": [
-                        "scenarios/2. emotion tracker/image/rain.png"
+                        "scenarios/2. emotion tracker/image/rainy.png"
                     ]
                 },
                 {
                     "name":"thunder",
                     "files": [
-                        "scenarios/2. emotion tracker/image/thunder.png"
+                        "scenarios/2. emotion tracker/image/rainbow.png"
                     ]
                 }
             ],
@@ -97,7 +97,11 @@ filters["weather_icon_tracker"] = (originalCanvas, segmentations, comp_setting)=
         composition.overlay_keys_shuffled = _.shuffle(composition.overlay_keys_shuffled);
     }
     let nose_positions = _.map(segmentations, (playerSegmentation,playerID)=>{
-        if (playerID=="local_vid") playerID = myName;
+        let display_name;
+        if (playerID=="local_vid") display_name = myName;
+        else {
+            display_name = document.querySelector("#div_"+playerID).querySelector(".display-name").getAttribute("name");
+        }
         let anchor_obj = playerSegmentation.allPoses[0].keypoints
             .filter(p=>{return p.part=="nose"; })[0];
         if (anchor_obj.score < 0.1) return false;  
@@ -106,7 +110,7 @@ filters["weather_icon_tracker"] = (originalCanvas, segmentations, comp_setting)=
             x: 800 - anchor_original.x,
             y: anchor_original.y
         };
-        let cs = comp_setting.players[playerID];  // cs means composition setting for the video
+        let cs = comp_setting.players[display_name];  // cs means composition setting for the video
         let video_x = 800 * (parseFloat(cs.x.replace("%",""))/100);
         let video_y = 600 * (parseFloat(cs.y.replace("%",""))/100);
         let video_width = 800 * (parseFloat(cs.scale.replace("%",""))/100);

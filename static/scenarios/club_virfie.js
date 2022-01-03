@@ -8,12 +8,18 @@ scenarios["club_virfie"]  = {
                     "z-index": 100,
                     "x": "20%",
                     "y": "0%",
-                    "scale": "100%"
+                    "scale": "80%"
                 },
                 "2": {
                     "z-index": 101,
                     "x": "30%",
-                    "y": "20%",
+                    "y": "10%",
+                    "scale": "85%"
+                },
+                "3": {
+                    "z-index": 102,
+                    "x": "40%",
+                    "y": "0%",
                     "scale": "85%"
                 }
             },
@@ -66,19 +72,19 @@ scenarios["club_virfie"]  = {
             "players": {
                 "1": {
                     "z-index": 100,
-                    "x": "-10%",
+                    "x": "10%",
                     "y": "0%",
                     "scale": "100%"
                 },
                 "2": {
                     "z-index": 101,
                     "x": "30%",
-                    "y": "20%",
-                    "scale": "85%"
+                    "y": "00%",
+                    "scale": "100%"
                 },
                 "3": {
                     "z-index": 102,
-                    "x": "10%",
+                    "x": "-10%",
                     "y": "30%",
                     "scale": "75%"
                 }
@@ -118,10 +124,10 @@ scenarios["club_virfie"]  = {
                         "player":"2",
                         "body_part": "leftWrist",
                         "offset":{
-                            "x":90,
-                            "y":-10
+                            "x":130,
+                            "y":40
                         },
-                        "scale": 1
+                        "scale": 1.5
                     }
                 },
                 {
@@ -133,12 +139,12 @@ scenarios["club_virfie"]  = {
                     "position":{
                         "type": "tracking",
                         "player":"3",
-                        "body_part": "leftWrist",
+                        "body_part": "rightWrist",
                         "offset":{
-                            "x":90,
-                            "y":-10
+                            "x":130,
+                            "y":40
                         },
-                        "scale": 1
+                        "scale": 1.5
                     }
                 },
                 {
@@ -164,17 +170,17 @@ scenarios["club_virfie"]  = {
                                 "1": {
                                     "body_part":"rightWrist"
                                 },
-                                // "2": {
-                                //     "body_part":"leftWrist"
-                                // },
-                                // "3": {
-                                //     "body_part":"rightWrist"
-                                // }
+                                "2": {
+                                    "body_part":"rightWrist"
+                                },
+                                "3": {
+                                    "body_part":"rightWrist"
+                                }
                             },
                             "area": {
-                                "top":"55%",
-                                "right":"55%",
-                                "left":"45%",
+                                "top":"45%",
+                                "right":"65%",
+                                "left":"35%",
                                 "bottom":"85%"
                             }
                         }
