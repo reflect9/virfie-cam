@@ -34,8 +34,8 @@ scenarios["space_wiggle"]= {
                             },
                             "area": {
                                 "top":"0%",
-                                "right":"60%",
-                                "left":"40%",
+                                "right":"70%",
+                                "left":"30%",
                                 "bottom":"100%"
                             }
                         }
@@ -47,7 +47,7 @@ scenarios["space_wiggle"]= {
                                 "filter": {
                                     "type":"twirl",
                                     "cycle":1000, // 1000 =1 sec for each cycle
-                                    "angle":5,    // 5 means 360 * 5 rotated 
+                                    "angle":10,    // 5 means 360 * 5 rotated 
                                 }
                             }
                         }

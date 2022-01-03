@@ -5,20 +5,20 @@ scenarios["emotion_tracker"] = {
             "audio": undefined,
             "players": {
                 "1": {
-                    "z-index": 100,
+                    "z-index": 102,
                     "x": "-10%",
                     "y": "30%",
                     "scale": "80%"
                 },
                 "2": {
-                    "z-index": 101,
-                    "x": "10%",
+                    "z-index": 100,
+                    "x": "0%",
                     "y": "20%",
                     "scale": "85%"
                 },
                 "3": {
-                    "z-index": 102,
-                    "x": "40%",
+                    "z-index": 101,
+                    "x": "10%",
                     "y": "30%",
                     "scale": "80%"
                 }

@@ -6,21 +6,21 @@ scenarios["club_virfie"]  = {
             "players": {
                 "1": {
                     "z-index": 100,
-                    "x": "20%",
-                    "y": "0%",
+                    "x": "-15%",
+                    "y": "15%",
                     "scale": "80%"
                 },
                 "2": {
                     "z-index": 101,
-                    "x": "30%",
+                    "x": "0%",
                     "y": "10%",
-                    "scale": "85%"
+                    "scale": "80%"
                 },
                 "3": {
                     "z-index": 102,
-                    "x": "40%",
-                    "y": "0%",
-                    "scale": "85%"
+                    "x": "15%",
+                    "y": "15%",
+                    "scale": "80%"
                 }
             },
             "overlays": [
@@ -71,22 +71,22 @@ scenarios["club_virfie"]  = {
             "audio": "/static/scenarios/3. club virfie/sound/club bar.mp3",
             "players": {
                 "1": {
-                    "z-index": 100,
-                    "x": "10%",
-                    "y": "0%",
-                    "scale": "100%"
+                    "z-index": 102,
+                    "x": "0%",
+                    "y": "20%",
+                    "scale": "75%"
                 },
                 "2": {
                     "z-index": 101,
                     "x": "30%",
-                    "y": "00%",
-                    "scale": "100%"
+                    "y": "10%",
+                    "scale": "80%"
                 },
                 "3": {
-                    "z-index": 102,
-                    "x": "-10%",
+                    "z-index": 100,
+                    "x": "-15%",
                     "y": "30%",
-                    "scale": "75%"
+                    "scale": "100%"
                 }
             },
             "background": {
@@ -178,9 +178,9 @@ scenarios["club_virfie"]  = {
                                 }
                             },
                             "area": {
-                                "top":"45%",
-                                "right":"65%",
-                                "left":"35%",
+                                "top":"15%",
+                                "right":"75%",
+                                "left":"25%",
                                 "bottom":"85%"
                             }
                         }
