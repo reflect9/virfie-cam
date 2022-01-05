@@ -41,10 +41,10 @@ scenarios["club_virfie"]  = {
                                 "body_part":"nose"
                             },
                             "area": {
-                                "top":"20%",
+                                "top":"0%",
                                 "right":"70%",
                                 "left":"30%",
-                                "bottom":"80%"
+                                "bottom":"100%"
                             }
                         }
                     },

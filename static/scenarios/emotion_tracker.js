@@ -2,7 +2,7 @@ scenarios["emotion_tracker"] = {
     "scenes":[
         {
             "title": "Emotion Tracker",
-            "audio": undefined,
+            "audio": "",
             "players": {
                 "1": {
                     "z-index": 102,
