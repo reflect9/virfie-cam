@@ -128,6 +128,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if (args.env == 'production'):
-        socketio.run(app, host="0.0.0.0", port=443, keyfile="privkey.pem", certfile="fullchain.pem", debug=True)
+        socketio.run(app, host="0.0.0.0", port=443, keyfile="/etc/letsencrypt/live/api.onebob.co/privkey.pem", certfile="/etc/letsencrypt/live/api.onebob.co/cert.pem", debug=True)
     else:
         socketio.run(app, host="0.0.0.0", debug=True)
